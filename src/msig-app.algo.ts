@@ -42,7 +42,7 @@ class MsigApp extends Contract {
      * @returns Msig App Application ID
      */
     @allow.create("NoOp")
-    deploy(threshold: uint64): Application {
+    arc55_deploy(threshold: uint64): Application {
         assert(threshold);
 
         this.threshold.value = threshold;
@@ -53,7 +53,7 @@ class MsigApp extends Contract {
      * Update the application
      */
     @allow.call("UpdateApplication")
-    update(): void {
+    arc55_update(): void {
         assert(this.is_admin());
     }
 
@@ -61,7 +61,7 @@ class MsigApp extends Contract {
      * Destroy the application and return funds to creator address. All transactions must be removed before calling destroy
      */
     @allow.call("DeleteApplication")
-    destroy(): void {
+    arc55_destroy(): void {
         assert(this.is_admin());
 
         sendPayment({
@@ -77,7 +77,7 @@ class MsigApp extends Contract {
      * @param index Account position within multisig to add
      * @param account Account to add
      */
-    addAccount(index: uint<8>, account: Account): void {
+    arc55_addAccount(index: uint<8>, account: Account): void {
         assert(this.is_admin());
 
         // If index already exists, remove index (and decrement account)
@@ -97,7 +97,7 @@ class MsigApp extends Contract {
      * Remove account from multisig
      * @param index Account position within multisig to remove
      */
-    removeAccount(index: uint<8>): void {
+    arc55_removeAccount(index: uint<8>): void {
         assert(this.is_admin());
 
         // Delete account by multsig index
@@ -108,7 +108,7 @@ class MsigApp extends Contract {
      * Update the multisig threshold
      * @param threshold New multisig threshold, must be greater than 0
      */
-    setThreshold(threshold: uint<64>): void {
+    arc55_setThreshold(threshold: uint<64>): void {
         assert(this.is_admin());
 
         assert(threshold);
@@ -121,7 +121,7 @@ class MsigApp extends Contract {
      * @param index Transaction position within atomic group to add
      * @param transaction Transaction to add
      */
-    addTransaction(index: uint<8>, transaction: byte[]): void {
+    arc55_addTransaction(index: uint<8>, transaction: byte[]): void {
         assert(this.is_admin());
 
         // Store transaction in box
@@ -132,7 +132,7 @@ class MsigApp extends Contract {
      * Remove transaction from the app. Unlike signatures which will remove all previous signatures when a new one is added, you must clear all previous transactions if you want to reuse the same app
      * @param index Transaction position within atomic group to remove
      */
-    removeTransaction(index: uint<8>): void {
+    arc55_removeTransaction(index: uint<8>): void {
         assert(this.is_admin());
 
         // Delete the box
@@ -145,7 +145,7 @@ class MsigApp extends Contract {
      */
     @allow.call("NoOp")
     @allow.call("OptIn")
-    setSignatures(signatures: byte[][]): void {
+    arc55_setSignatures(signatures: byte[][]): void {
         assert(this.is_subsigner());
 
         // Process byte[][]
@@ -161,10 +161,11 @@ class MsigApp extends Contract {
 
     /**
      * Clear signatures for an account. Be aware this only removes it from your local state, and indexers will still know and could use your signature
+     * @param account Account whose signatures to clear
      */
     @allow.call("NoOp")
     @allow.call("CloseOut")
-    clearSignatures(account: Account): void {
+    arc55_clearSignatures(account: Account): void {
         const is_admin = this.is_admin();
         assert(is_admin || this.is_subsigner());
 
