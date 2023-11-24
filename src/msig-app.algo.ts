@@ -7,12 +7,12 @@ class MsigApp extends Contract {
     transactions = BoxMap<uint<8>, byte[]>({});
     signatures = LocalStateMap<uint64, byte[]>({ maxKeys: 16 });
 
-    private admin_only(): void {
-        assert(this.txn.sender === globals.creatorAddress)
+    private is_admin(): boolean {
+        return this.txn.sender === globals.creatorAddress;
     }
 
-    private subsigners_only(): void {
-        assert(this.accountCount(this.txn.sender).exists)
+    private is_subsigner(): boolean {
+        return this.accountCount(this.txn.sender).exists as boolean;
     }
 
     private remove_account_by_index(index: uint<8>): void {
@@ -38,11 +38,14 @@ class MsigApp extends Contract {
 
     /**
      * Deploy a new On-Chain Msig App.
+     * @param threshold Initial multisig threshold, must be greater than 0
      * @returns Msig App Application ID
      */
     @allow.create("NoOp")
-    deploy(): Application {
-        this.threshold.value = 1;
+    deploy(threshold: uint64): Application {
+        assert(threshold);
+
+        this.threshold.value = threshold;
         return globals.currentApplicationID;
     }
 
@@ -51,7 +54,7 @@ class MsigApp extends Contract {
      */
     @allow.call("UpdateApplication")
     update(): void {
-        this.admin_only()
+        assert(this.is_admin());
     }
 
     /**
@@ -59,7 +62,7 @@ class MsigApp extends Contract {
      */
     @allow.call("DeleteApplication")
     destroy(): void {
-        this.admin_only()
+        assert(this.is_admin());
 
         sendPayment({
             amount: 0,
@@ -75,7 +78,7 @@ class MsigApp extends Contract {
      * @param account Account to add
      */
     addAccount(index: uint<8>, account: Account): void {
-        this.admin_only()
+        assert(this.is_admin());
 
         // If index already exists, remove index (and decrement account)
         if (this.indexToAccount(index).exists) {
@@ -95,7 +98,7 @@ class MsigApp extends Contract {
      * @param index Account position within multisig to remove
      */
     removeAccount(index: uint<8>): void {
-        this.admin_only()
+        assert(this.is_admin());
 
         // Delete account by multsig index
         this.remove_account_by_index(index);
@@ -103,9 +106,13 @@ class MsigApp extends Contract {
 
     /**
      * Update the multisig threshold
-     * @param threshold New multisig threshold
+     * @param threshold New multisig threshold, must be greater than 0
      */
     setThreshold(threshold: uint<64>): void {
+        assert(this.is_admin());
+
+        assert(threshold);
+
         this.threshold.value = threshold;
     }
 
@@ -115,7 +122,7 @@ class MsigApp extends Contract {
      * @param transaction Transaction to add
      */
     addTransaction(index: uint<8>, transaction: byte[]): void {
-        this.admin_only()
+        assert(this.is_admin());
 
         // Store transaction in box
         this.transactions(index).value = transaction;
@@ -126,7 +133,7 @@ class MsigApp extends Contract {
      * @param index Transaction position within atomic group to remove
      */
     removeTransaction(index: uint<8>): void {
-        this.admin_only()
+        assert(this.is_admin());
 
         // Delete the box
         this.transactions(index).delete();
@@ -139,7 +146,7 @@ class MsigApp extends Contract {
     @allow.call("NoOp")
     @allow.call("OptIn")
     setSignatures(signatures: byte[][]): void {
-        this.subsigners_only();
+        assert(this.is_subsigner());
 
         // Process byte[][]
 
@@ -157,9 +164,14 @@ class MsigApp extends Contract {
      */
     @allow.call("NoOp")
     @allow.call("CloseOut")
-    clearSignatures(): void {
-        this.subsigners_only();
+    clearSignatures(account: Account): void {
+        const is_admin = this.is_admin();
+        assert(is_admin || this.is_subsigner());
 
-        this.clear_signatures(this.txn.sender, 0);
+        if (!is_admin) {
+            assert(this.txn.sender == account);
+        }
+
+        this.clear_signatures(account, 0);
     }
 }
