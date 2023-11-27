@@ -4,7 +4,7 @@ class MsigApp extends Contract {
     threshold = GlobalStateKey<uint<64>>({ key: 't' });
     indexToAccount = GlobalStateMap<uint<8>, Account>({ maxKeys: 8 });
     accountCount = GlobalStateMap<Account, uint<64>>({ maxKeys: 8 });
-    transactions = BoxMap<uint<8>, byte[]>({});
+    transactions = BoxMap<uint<8>, byte[]>({ prefix: 'txn' });
     signatures = LocalStateMap<uint<64>, byte[]>({ maxKeys: 16 });
 
     private is_admin(): boolean {
@@ -43,9 +43,11 @@ class MsigApp extends Contract {
      */
     @allow.create("NoOp")
     arc55_deploy(threshold: uint<8>): Application {
-        assert(threshold);
+        const t: uint<64> = btoi(rawBytes(threshold));
 
-        this.threshold.value = btoi(rawBytes(threshold));
+        assert(t);
+
+        this.threshold.value = t;
         return globals.currentApplicationID;
     }
 
@@ -111,9 +113,11 @@ class MsigApp extends Contract {
     arc55_setThreshold(threshold: uint<8>): void {
         assert(this.is_admin());
 
-        assert(threshold);
+        const t: uint<64> = btoi(rawBytes(threshold));
 
-        this.threshold.value = btoi(rawBytes(threshold));
+        assert(t);
+
+        this.threshold.value = t;
     }
 
     /**
@@ -125,7 +129,8 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Store transaction in box
-        this.transactions(index).value = transaction;
+        //const box: string = "txn" + (index + 0x30)
+        this.transactions(index + 0x30).value = transaction;
     }
 
     /**
@@ -136,7 +141,9 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Delete the box
-        this.transactions(index).delete();
+        //const box: string = "txn" + (index + 0x30)
+        //this.transactions(box).delete();
+        this.transactions(index + 0x30).delete();
     }
 
     /**
