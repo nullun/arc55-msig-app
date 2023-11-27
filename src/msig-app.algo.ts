@@ -1,11 +1,11 @@
 import { Contract } from '@algorandfoundation/tealscript';
 
 class MsigApp extends Contract {
-    threshold = GlobalStateKey<uint64>({ key: 't' });
+    threshold = GlobalStateKey<uint<64>>({ key: 't' });
     indexToAccount = GlobalStateMap<uint<8>, Account>({ maxKeys: 8 });
-    accountCount = GlobalStateMap<Account, uint64>({ maxKeys: 8 });
+    accountCount = GlobalStateMap<Account, uint<64>>({ maxKeys: 8 });
     transactions = BoxMap<uint<8>, byte[]>({});
-    signatures = LocalStateMap<uint64, byte[]>({ maxKeys: 16 });
+    signatures = LocalStateMap<uint<64>, byte[]>({ maxKeys: 16 });
 
     private is_admin(): boolean {
         return this.txn.sender === globals.creatorAddress;
@@ -30,7 +30,7 @@ class MsigApp extends Contract {
         }
     }
 
-    private clear_signatures(account: Account, starting_index: uint64): void {
+    private clear_signatures(account: Account, starting_index: uint<64>): void {
         for (let index = starting_index; index < 16; index = index + 1) {
             this.signatures(account, index).delete();
         }
@@ -42,10 +42,10 @@ class MsigApp extends Contract {
      * @returns Msig App Application ID
      */
     @allow.create("NoOp")
-    arc55_deploy(threshold: uint64): Application {
+    arc55_deploy(threshold: uint<8>): Application {
         assert(threshold);
 
-        this.threshold.value = threshold;
+        this.threshold.value = btoi(rawBytes(threshold));
         return globals.currentApplicationID;
     }
 
@@ -108,12 +108,12 @@ class MsigApp extends Contract {
      * Update the multisig threshold
      * @param threshold New multisig threshold, must be greater than 0
      */
-    arc55_setThreshold(threshold: uint<64>): void {
+    arc55_setThreshold(threshold: uint<8>): void {
         assert(this.is_admin());
 
         assert(threshold);
 
-        this.threshold.value = threshold;
+        this.threshold.value = btoi(rawBytes(threshold));
     }
 
     /**
@@ -151,7 +151,7 @@ class MsigApp extends Contract {
         // Process byte[][]
 
         // Starting at index 0, add each sig to an indexed kv-pair
-        let index: uint64;
+        let index: uint<64>;
         for (index = 0; signatures.length > index; index = index + 1) {
             this.signatures(this.txn.sender, index).value = signatures[index];
         }
