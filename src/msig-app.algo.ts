@@ -129,7 +129,6 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Store transaction in box
-        //const box: string = "txn" + (index + 0x30)
         this.transactions(index + 0x30).value = transaction;
     }
 
@@ -141,8 +140,6 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Delete the box
-        //const box: string = "txn" + (index + 0x30)
-        //this.transactions(box).delete();
         this.transactions(index + 0x30).delete();
     }
 
