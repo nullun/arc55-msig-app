@@ -4,7 +4,7 @@ class MsigApp extends Contract {
     threshold = GlobalStateKey<uint<64>>({ key: 't' });
     indexToAccount = GlobalStateMap<uint<8>, Account>({ maxKeys: 8 });
     accountCount = GlobalStateMap<Account, uint<64>>({ maxKeys: 8 });
-    transactions = BoxMap<uint<8>, byte[]>({ prefix: 'txn' });
+    transactions = BoxMap<bytes, byte[]>({ prefix: 'txn' });
     signatures = LocalStateMap<uint<64>, byte[]>({ maxKeys: 16 });
 
     private is_admin(): boolean {
@@ -35,6 +35,16 @@ class MsigApp extends Contract {
             this.signatures(account, index).delete();
         }
     }
+
+	private _convertIndexToNumber(index: uint<8>): bytes {
+		assert(index < 16);
+
+        if (index > 9) {
+            return '1' + rawBytes((index % 10) + 0x30);
+        } else {
+            return rawBytes(index + 0x30);
+        }
+	}
 
     /**
      * Deploy a new On-Chain Msig App.
@@ -129,7 +139,8 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Store transaction in box
-        this.transactions(index + 0x30).value = transaction;
+        const num = this._convertIndexToNumber(index);
+        this.transactions(num).value = transaction;
     }
 
     /**
@@ -140,7 +151,8 @@ class MsigApp extends Contract {
         assert(this.is_admin());
 
         // Delete the box
-        this.transactions(index + 0x30).delete();
+        const num = this._convertIndexToNumber(index);
+        this.transactions(num).delete();
     }
 
     /**
