@@ -1,63 +1,51 @@
 import { Contract } from '@algorandfoundation/tealscript';
 
-class MsigApp extends Contract {
-    threshold = GlobalStateKey<uint<64>>({ key: 't' });
-    indexToAccount = GlobalStateMap<uint<8>, Account>({ maxKeys: 8 });
-    accountCount = GlobalStateMap<Account, uint<64>>({ maxKeys: 8 });
-    transactions = BoxMap<bytes, byte[]>({ prefix: 'txn' });
-    signatures = LocalStateMap<uint<64>, byte[]>({ maxKeys: 16 });
+type TransactionGroup = {
+    nonce: uint<64>,
+    index: uint<8>
+};
 
-    private is_admin(): boolean {
+type TransactionSignatures = {
+    nonce: uint<64>,
+    address: Address
+};
+
+class MsigApp extends Contract {
+    // ========== Storage ==========
+    // Number of signatures requires
+    threshold = GlobalStateKey<uint<64>>({ key: 't' });
+
+    // Incrementing nonce for separating different groups of transactions
+    nonce = GlobalStateKey<uint<64>>({ key: 'n' });
+
+    // Transactions
+    transactions = BoxMap<TransactionGroup, bytes>({});
+
+    // Signatures
+    signatures = BoxMap<TransactionSignatures, bytes[]>({});
+
+    // Signers
+    indexToAddress = GlobalStateMap<uint<64>, Address>({ maxKeys: 8 });
+    addressCount = GlobalStateMap<Address, uint<64>>({ maxKeys: 8 });
+
+
+    // ========== Internal ==========
+    private is_creator(): boolean {
         return this.txn.sender === globals.creatorAddress;
     }
 
-    private is_subsigner(): boolean {
-        return this.accountCount(this.txn.sender).exists as boolean;
+    private is_signer(): boolean {
+        return this.addressCount(this.txn.sender).exists as boolean;
     }
 
-    private remove_account_by_index(index: uint<8>): void {
-        // Fetch account before deleting
-        const acc: Account = this.indexToAccount(index).value;
 
-        // Delete account by index
-        this.indexToAccount(index).delete();
-
-        // Decrement account counter, or delete if no longer user
-        if (this.accountCount(acc).value >= 1) {
-            this.accountCount(acc).value = this.accountCount(acc).value - 1;
-        } else {
-            this.accountCount(acc).delete();
-        }
-    }
-
-    private clear_signatures(account: Account, starting_index: uint<64>): void {
-        for (let index = starting_index; index < 16; index = index + 1) {
-            this.signatures(account, index).delete();
-        }
-    }
-
-	private _convertIndexToNumber(index: uint<8>): bytes {
-		assert(index < 16);
-
-        if (index > 9) {
-            return '1' + rawBytes((index % 10) + 0x30);
-        } else {
-            return rawBytes(index + 0x30);
-        }
-	}
-
+    // ========== External ==========
     /**
      * Deploy a new On-Chain Msig App.
-     * @param threshold Initial multisig threshold, must be greater than 0
      * @returns Msig App Application ID
      */
     @allow.create("NoOp")
-    arc55_deploy(threshold: uint<8>): Application {
-        const t: uint<64> = btoi(rawBytes(threshold));
-
-        assert(t);
-
-        this.threshold.value = t;
+    deploy(): Application {
         return globals.currentApplicationID;
     }
 
@@ -65,16 +53,16 @@ class MsigApp extends Contract {
      * Update the application
      */
     @allow.call("UpdateApplication")
-    arc55_update(): void {
-        assert(this.is_admin());
+    update(): void {
+        assert(this.is_creator());
     }
 
     /**
      * Destroy the application and return funds to creator address. All transactions must be removed before calling destroy
      */
     @allow.call("DeleteApplication")
-    arc55_destroy(): void {
-        assert(this.is_admin());
+    destroy(): void {
+        assert(this.is_creator());
 
         sendPayment({
             amount: 0,
@@ -84,111 +72,166 @@ class MsigApp extends Contract {
         });
     }
 
+    // ========== ARC55 Interface ==========
     /**
-     * Add account to multisig
-     * @param index Account position within multisig to add
-     * @param account Account to add
+     * Setup On-Chain Msig App. This can only be called whilst no transaction groups have been created.
+     * @param threshold Initial multisig threshold, must be greater than 0
+     * @param addresses Array of addresses that make up the multisig
      */
-    arc55_addAccount(index: uint<8>, account: Account): void {
-        assert(this.is_admin());
-
-        // If index already exists, remove index (and decrement account)
-        if (this.indexToAccount(index).exists) {
-            this.remove_account_by_index(index);
-        }
-
-        // Store multisig index as key with account as value
-        this.indexToAccount(index).value = account;
-
-        // Store account as key and counter as value, this is for
-        // ease of authentication, and tracking removal
-        this.accountCount(account).value = this.accountCount(account).value + 1;
-    }
-
-    /**
-     * Remove account from multisig
-     * @param index Account position within multisig to remove
-     */
-    arc55_removeAccount(index: uint<8>): void {
-        assert(this.is_admin());
-
-        // Delete account by multsig index
-        this.remove_account_by_index(index);
-    }
-
-    /**
-     * Update the multisig threshold
-     * @param threshold New multisig threshold, must be greater than 0
-     */
-    arc55_setThreshold(threshold: uint<8>): void {
-        assert(this.is_admin());
+    arc55_setup(
+        threshold: uint<8>,
+        addresses: Address[]
+    ): void {
+        assert(!this.nonce.value);
+        assert(this.is_creator());
 
         const t: uint<64> = btoi(rawBytes(threshold));
-
         assert(t);
-
         this.threshold.value = t;
+
+        this.nonce.value = 0;
+
+        let index = 0;
+        let address: Address;
+        while (index < addresses.length) {
+            address = addresses[index];
+
+            // Store multisig index as key with address as value
+            this.indexToAddress(index).value = address;
+
+            // Store address as key and counter as value, this is for
+            // ease of authentication, and tracking removal
+            this.addressCount(address).value = this.addressCount(address).value + 1;
+
+            index = index + 1;
+        }
     }
 
+    arc55_newTransactionGroup(): uint<64> {
+        assert(this.is_signer());
+
+        const n = this.nonce.value + 1;
+        this.nonce.value = n;
+
+        return n;
+    }
+
+    // TODO: Delete old TransactionGroup boxes
+
     /**
-     * Add transaction to the app. Only one transaction should be included per call
+     * Add a transaction to an existing group. Only one transaction should be included per call
+     * @param transactionGroup Transaction Group nonce
      * @param index Transaction position within atomic group to add
      * @param transaction Transaction to add
      */
-    arc55_addTransaction(index: uint<8>, transaction: byte[]): void {
-        assert(this.is_admin());
+    arc55_addTransaction(
+        costs: PayTxn,
+        transactionGroup: uint<64>,
+        index: uint<8>,
+        transaction: bytes
+    ): void {
+        assert(this.is_signer());
+
+        // transactionBox costs:
+        // + Name: uint64 + uint8 = 8 + 1 = 9
+        // + Body: transaction.length
+        const mbrTxnIncrease = (2500) + (400 * (9 + transaction.length))
+
+        verifyTxn(costs, {
+            receiver: this.app.address,
+            amount: mbrTxnIncrease
+        });
+
+        assert(transactionGroup);
+        assert(transactionGroup <= this.nonce.value);
+
+        const transactionBox: TransactionGroup = {
+            nonce: transactionGroup,
+            index: index,
+        };
 
         // Store transaction in box
-        const num = this._convertIndexToNumber(index);
-        this.transactions(num).value = transaction;
+        //const num = this._convertIndexToNumber(index);
+        this.transactions(transactionBox).value = transaction;
     }
 
     /**
      * Remove transaction from the app. Unlike signatures which will remove all previous signatures when a new one is added, you must clear all previous transactions if you want to reuse the same app
+     * @param transactionGroup Transaction Group nonce
      * @param index Transaction position within atomic group to remove
      */
-    arc55_removeTransaction(index: uint<8>): void {
-        assert(this.is_admin());
+    arc55_removeTransaction(
+        transactionGroup: uint<64>,
+        index: uint<8>
+    ): void {
+        assert(this.is_signer());
+
+        const transactionBox: TransactionGroup = {
+            nonce: transactionGroup,
+            index: index,
+        };
 
         // Delete the box
-        const num = this._convertIndexToNumber(index);
-        this.transactions(num).delete();
+        //const num = this._convertIndexToNumber(index);
+        this.transactions(transactionBox).delete;
     }
 
     /**
-     * Set signatures for account. Signatures must be included as an array of byte-arrays
+     * Set signatures for a particular transaction group. Signatures must be included as an array of byte-arrays
+     * @param transactionGroup Transaction Group nonce
      * @param signatures Array of signatures
      */
-    @allow.call("NoOp")
-    @allow.call("OptIn")
-    arc55_setSignatures(signatures: byte[][]): void {
-        assert(this.is_subsigner());
+    arc55_setSignatures(
+        costs: PayTxn,
+        transactionGroup: uint<64>,
+        signatures: bytes[]
+    ): void {
+        assert(this.is_signer());
 
-        // Process byte[][]
+        // signatureBox costs:
+        // + Name: uint64 + address = 8 + 32 = 40
+        // + Body: signatures.length
+        const mbrSigIncrease = (2500) + (400 * (40 + signatures.length))
 
-        // Starting at index 0, add each sig to an indexed kv-pair
-        let index: uint<64>;
-        for (index = 0; signatures.length > index; index = index + 1) {
-            this.signatures(this.txn.sender, index).value = signatures[index];
-        }
-        // Clear any remaining signatures
-        this.clear_signatures(this.txn.sender, index);
+        verifyTxn(costs, {
+            receiver: this.app.address,
+            amount: mbrSigIncrease,
+        });
+
+        const signatureBox: TransactionSignatures = {
+            nonce: transactionGroup,
+            address: this.txn.sender
+        };
+
+        this.signatures(signatureBox).value = signatures;
     }
 
     /**
-     * Clear signatures for an account. Be aware this only removes it from your local state, and indexers will still know and could use your signature
-     * @param account Account whose signatures to clear
+     * Clear signatures for an address. Be aware this only removes it from the current state of the ledger, and indexers will still know and could use your signature
+     * @param address Address whose signatures to clear
      */
-    @allow.call("NoOp")
-    @allow.call("CloseOut")
-    arc55_clearSignatures(account: Account): void {
-        const is_admin = this.is_admin();
-        assert(is_admin || this.is_subsigner());
+    arc55_clearSignatures(
+        transactionGroup: uint<64>,
+        address: Address
+    ): void {
+        assert(this.is_signer());
 
-        if (!is_admin) {
-            assert(this.txn.sender == account);
-        }
+        const signatureBox: TransactionSignatures = {
+            nonce: transactionGroup,
+            address: address
+        };
 
-        this.clear_signatures(account, 0);
+        const sigLength = this.signatures(signatureBox).size;
+        this.signatures(signatureBox).delete;
+
+        // signatureBox costs:
+        // + Name: uint64 + address = 8 + 32 = 40
+        // + Body: signatures.length
+        const mbrSigDecrease = (2500) + (400 * (40 + sigLength))
+
+        sendPayment({
+            receiver: address,
+            amount: mbrSigDecrease
+        });
     }
 }
