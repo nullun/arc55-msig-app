@@ -25,8 +25,8 @@ class MsigApp extends Contract {
     signatures = BoxMap<TransactionSignatures, bytes[]>({});
 
     // Signers
-    indexToAddress = GlobalStateMap<uint<64>, Address>({ maxKeys: 8 });
-    addressCount = GlobalStateMap<Address, uint<64>>({ maxKeys: 8 });
+    indexToAddress = GlobalStateMap<uint<64>, Address>({ maxKeys: 8, allowPotentialCollisions: true });
+    addressCount = GlobalStateMap<Address, uint<64>>({ maxKeys: 8, allowPotentialCollisions: true });
 
 
     // ========== Internal ==========
