@@ -1,15 +1,13 @@
 {
   "name": "tealscript_msig_app",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
+  "description": "ARC55 reference implementation",
+  "license": "MIT",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@algorandfoundation/tealscript": "^0.63.0"
+    "@algorandfoundation/tealscript": "^0.65.0"
   }
 }

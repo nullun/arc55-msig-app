@@ -1,0 +1,157 @@
+{
+  "name": "MsigApp",
+  "desc": "",
+  "methods": [
+    {
+      "name": "deploy",
+      "args": [],
+      "desc": "Deploy a new On-Chain Msig App.",
+      "returns": {
+        "type": "uint64",
+        "desc": "Msig App Application ID"
+      }
+    },
+    {
+      "name": "update",
+      "args": [],
+      "desc": "Update the application",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "destroy",
+      "args": [],
+      "desc": "Destroy the application and return funds to creator address. All transactions must be removed before calling destroy",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_setup",
+      "args": [
+        {
+          "name": "threshold",
+          "type": "uint8",
+          "desc": "Initial multisig threshold, must be greater than 0"
+        },
+        {
+          "name": "addresses",
+          "type": "address[]",
+          "desc": "Array of addresses that make up the multisig"
+        }
+      ],
+      "desc": "Setup On-Chain Msig App. This can only be called whilst no transaction groups have been created.",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_newTransactionGroup",
+      "args": [],
+      "desc": "",
+      "returns": {
+        "type": "uint64",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_addTransaction",
+      "args": [
+        {
+          "name": "costs",
+          "type": "pay",
+          "desc": ""
+        },
+        {
+          "name": "transactionGroup",
+          "type": "uint64",
+          "desc": "Transaction Group nonce"
+        },
+        {
+          "name": "index",
+          "type": "uint8",
+          "desc": "Transaction position within atomic group to add"
+        },
+        {
+          "name": "transaction",
+          "type": "byte[]",
+          "desc": "Transaction to add"
+        }
+      ],
+      "desc": "Add a transaction to an existing group. Only one transaction should be included per call",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_removeTransaction",
+      "args": [
+        {
+          "name": "transactionGroup",
+          "type": "uint64",
+          "desc": "Transaction Group nonce"
+        },
+        {
+          "name": "index",
+          "type": "uint8",
+          "desc": "Transaction position within atomic group to remove"
+        }
+      ],
+      "desc": "Remove transaction from the app. Unlike signatures which will remove all previous signatures when a new one is added, you must clear all previous transactions if you want to reuse the same app",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_setSignatures",
+      "args": [
+        {
+          "name": "costs",
+          "type": "pay",
+          "desc": ""
+        },
+        {
+          "name": "transactionGroup",
+          "type": "uint64",
+          "desc": "Transaction Group nonce"
+        },
+        {
+          "name": "signatures",
+          "type": "byte[][]",
+          "desc": "Array of signatures"
+        }
+      ],
+      "desc": "Set signatures for a particular transaction group. Signatures must be included as an array of byte-arrays",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
+      "name": "arc55_clearSignatures",
+      "args": [
+        {
+          "name": "transactionGroup",
+          "type": "uint64",
+          "desc": ""
+        },
+        {
+          "name": "address",
+          "type": "address",
+          "desc": "Address whose signatures to clear"
+        }
+      ],
+      "desc": "Clear signatures for an address. Be aware this only removes it from the current state of the ledger, and indexers will still know and could use your signature",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    }
+  ]
+}
