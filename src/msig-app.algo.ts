@@ -107,6 +107,10 @@ class MsigApp extends Contract {
         }
     }
 
+    /**
+     * Generate a new transaction group nonce for holding pending transactions
+     * @returns transactionGroup Transaction Group nonce
+     */
     arc55_newTransactionGroup(): uint<64> {
         assert(this.is_signer());
 
@@ -120,6 +124,7 @@ class MsigApp extends Contract {
 
     /**
      * Add a transaction to an existing group. Only one transaction should be included per call
+     * @param costs Minimum Balance Requirement for associated box storage costs: (2500) + (400 * (9 + transaction.length))
      * @param transactionGroup Transaction Group nonce
      * @param index Transaction position within atomic group to add
      * @param transaction Transaction to add
@@ -156,7 +161,7 @@ class MsigApp extends Contract {
     }
 
     /**
-     * Remove transaction from the app. Unlike signatures which will remove all previous signatures when a new one is added, you must clear all previous transactions if you want to reuse the same app
+     * Remove transaction from the app. The MBR associated with the transaction will be returned to the Msig address.
      * @param transactionGroup Transaction Group nonce
      * @param index Transaction position within atomic group to remove
      */
@@ -178,6 +183,7 @@ class MsigApp extends Contract {
 
     /**
      * Set signatures for a particular transaction group. Signatures must be included as an array of byte-arrays
+     * @param costs Minimum Balance Requirement for associated box storage costs: (2500) + (400 * (40 + signatures.length))
      * @param transactionGroup Transaction Group nonce
      * @param signatures Array of signatures
      */
@@ -208,6 +214,7 @@ class MsigApp extends Contract {
 
     /**
      * Clear signatures for an address. Be aware this only removes it from the current state of the ledger, and indexers will still know and could use your signature
+     * @param transactionGroup Transaction Group nonce
      * @param address Address whose signatures to clear
      */
     arc55_clearSignatures(
