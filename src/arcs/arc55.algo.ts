@@ -11,9 +11,9 @@ type TransactionSignatures = {
 };
 
 export class ARC55 extends Contract {
-	programVersion = 10;
+    programVersion = 10;
 
-	// ============ State Variables ============
+    // ============ State Variables ============
     // Number of signatures requires
     _threshold = GlobalStateKey<uint<64>>({});
 
@@ -31,7 +31,7 @@ export class ARC55 extends Contract {
     _addressCount = GlobalStateMap<Address, uint<64>>({ maxKeys: 8, allowPotentialCollisions: true });
 
 
-	// ============ Events ============
+    // ============ Events ============
     /**
      * Emitted when a new transaction is added to a transaction group
      */
@@ -73,7 +73,7 @@ export class ARC55 extends Contract {
     }>();
 
 
-	// ============ Access Checks ============
+    // ============ Access Checks ============
     /**
      * Check the transaction sender is a signer for the multisig
      */
@@ -89,7 +89,7 @@ export class ARC55 extends Contract {
     }
 
 
-	// ============ Read Only ============
+    // ============ Read Only ============
     /**
      * Retrieve the signature threshold required for the multisignature to be submitted
      * @returns Multisignature threshold
@@ -97,7 +97,7 @@ export class ARC55 extends Contract {
     @abi.readonly
     arc55_threshold(): uint64 {
         return this._threshold.value;
-    }
+        }
 
     /**
      * Retrieve a transaction from a given transaction group
@@ -122,7 +122,7 @@ export class ARC55 extends Contract {
      * @returns Array of signatures
      */
     @abi.readonly
-    arc55_signatures(transactionGroup: uint64, signer: Address) : bytes64[] {
+    arc55_signatures(transactionGroup: uint64, signer: Address): bytes64[] {
         const signatureBox: TransactionSignatures = {
             nonce: transactionGroup,
             address: signer
@@ -152,7 +152,7 @@ export class ARC55 extends Contract {
     }
 
 
-	// ============ External Functions ============
+    // ============ External Functions ============
     /**
      * Setup On-Chain Msig App. This can only be called whilst no transaction groups have been created.
      * @param threshold Initial multisig threshold, must be greater than 0
