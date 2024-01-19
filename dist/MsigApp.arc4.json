@@ -13,7 +13,7 @@
       }
     },
     {
-      "name": "arc55_transactions",
+      "name": "arc55_transaction",
       "desc": "Retrieve a transaction from a given transaction group",
       "readonly": true,
       "args": [
@@ -88,28 +88,34 @@
     },
     {
       "name": "arc55_mbrSigIncrease",
+      "desc": "Calculate the minimum balance requirement for storing a signature",
       "readonly": true,
       "args": [
         {
           "name": "signatures",
-          "type": "byte[64][]"
+          "type": "byte[64][]",
+          "desc": "Provided signature to store"
         }
       ],
       "returns": {
-        "type": "uint64"
+        "type": "uint64",
+        "desc": "Minimum balance requirement increase"
       }
     },
     {
       "name": "arc55_mbrTxnIncrease",
+      "desc": "Calculate the minimum balance requirement for storing a transaction",
       "readonly": true,
       "args": [
         {
           "name": "transaction",
-          "type": "byte[]"
+          "type": "byte[]",
+          "desc": "Provided transaction to store"
         }
       ],
       "returns": {
-        "type": "uint64"
+        "type": "uint64",
+        "desc": "Minimum balance requirement increase"
       }
     },
     {

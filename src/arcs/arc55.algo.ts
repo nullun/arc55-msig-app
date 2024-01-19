@@ -1,12 +1,12 @@
 import { Contract } from "@algorandfoundation/tealscript";
 
 type TransactionGroup = {
-    nonce: uint<64>,
-    index: uint<8>
+    nonce: uint64,
+    index: uint8
 };
 
 type TransactionSignatures = {
-    nonce: uint<64>,
+    nonce: uint64,
     address: Address
 };
 
@@ -15,10 +15,10 @@ export class ARC55 extends Contract {
 
     // ============ State Variables ============
     // Number of signatures requires
-    _threshold = GlobalStateKey<uint<64>>({});
+    _threshold = GlobalStateKey<uint64>({});
 
     // Incrementing nonce for separating different groups of transactions
-    _nonce = GlobalStateKey<uint<64>>({});
+    _nonce = GlobalStateKey<uint64>({});
 
     // Transactions
     _transactions = BoxMap<TransactionGroup, bytes>({});
@@ -27,8 +27,8 @@ export class ARC55 extends Contract {
     _signatures = BoxMap<TransactionSignatures, bytes64[]>({});
 
     // Signers
-    _indexToAddress = GlobalStateMap<uint<64>, Address>({ maxKeys: 8, allowPotentialCollisions: true });
-    _addressCount = GlobalStateMap<Address, uint<64>>({ maxKeys: 8, allowPotentialCollisions: true });
+    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 8, allowPotentialCollisions: true });
+    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 8, allowPotentialCollisions: true });
 
 
     // ============ Events ============
@@ -97,7 +97,7 @@ export class ARC55 extends Contract {
     @abi.readonly
     arc55_threshold(): uint64 {
         return this._threshold.value;
-        }
+    }
 
     /**
      * Retrieve a transaction from a given transaction group
@@ -106,7 +106,7 @@ export class ARC55 extends Contract {
      * @returns A single transaction at the specified index for the transaction group nonce
      */
     @abi.readonly
-    arc55_transactions(transactionGroup: uint64, transactionIndex: uint8): bytes {
+    arc55_transaction(transactionGroup: uint64, transactionIndex: uint8): bytes {
         const transactionBox: TransactionGroup = {
             nonce: transactionGroup,
             index: transactionIndex
@@ -151,6 +151,11 @@ export class ARC55 extends Contract {
         return this._addressCount(address).value !== 0;
     }
 
+    /**
+     * Calculate the minimum balance requirement for storing a signature
+     * @param signatures Provided signature to store
+     * @returns Minimum balance requirement increase
+     */
     @abi.readonly
     arc55_mbrSigIncrease(signatures: bytes64[]): uint64 {
         // signatureBox costs:
@@ -161,6 +166,11 @@ export class ARC55 extends Contract {
         return mbrSigIncrease;
     }
 
+    /**
+     * Calculate the minimum balance requirement for storing a transaction
+     * @param transaction Provided transaction to store
+     * @returns Minimum balance requirement increase
+     */
     @abi.readonly
     arc55_mbrTxnIncrease(transaction: bytes): uint64 {
         // transactionBox costs:
@@ -179,13 +189,13 @@ export class ARC55 extends Contract {
      * @param addresses Array of addresses that make up the multisig
      */
     arc55_setup(
-        threshold: uint<8>,
+        threshold: uint8,
         addresses: Address[]
     ): void {
         assert(!this._nonce.value);
         this.onlyCreator();
 
-        const t: uint<64> = btoi(rawBytes(threshold));
+        const t: uint64 = btoi(rawBytes(threshold));
         assert(t);
         this._threshold.value = t;
 
@@ -211,7 +221,7 @@ export class ARC55 extends Contract {
      * Generate a new transaction group nonce for holding pending transactions
      * @returns transactionGroup Transaction Group nonce
      */
-    arc55_newTransactionGroup(): uint<64> {
+    arc55_newTransactionGroup(): uint64 {
         this.onlySigner();
 
         const n = this._nonce.value + 1;
@@ -229,8 +239,8 @@ export class ARC55 extends Contract {
      */
     arc55_addTransaction(
         costs: PayTxn,
-        transactionGroup: uint<64>,
-        index: uint<8>,
+        transactionGroup: uint64,
+        index: uint8,
         transaction: bytes
     ): void {
         this.onlySigner();
@@ -267,8 +277,8 @@ export class ARC55 extends Contract {
      * @param index Transaction position within atomic group to remove
      */
     arc55_removeTransaction(
-        transactionGroup: uint<64>,
-        index: uint<8>
+        transactionGroup: uint64,
+        index: uint8
     ): void {
         this.onlySigner();
 
@@ -305,7 +315,7 @@ export class ARC55 extends Contract {
      */
     arc55_setSignatures(
         costs: PayTxn,
-        transactionGroup: uint<64>,
+        transactionGroup: uint64,
         signatures: bytes64[]
     ): void {
         this.onlySigner();
@@ -337,7 +347,7 @@ export class ARC55 extends Contract {
      * @param address Address whose signatures to clear
      */
     arc55_clearSignatures(
-        transactionGroup: uint<64>,
+        transactionGroup: uint64,
         address: Address
     ): void {
         this.onlySigner();
