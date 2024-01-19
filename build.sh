@@ -2,6 +2,6 @@
 
 set -ex
 
-rm -rf output
-mkdir output
-npx tealscript src/msig-app.algo.ts output
+rm -rf dist
+mkdir dist
+bunx tealscript src/msig-app.algo.ts dist

@@ -151,6 +151,26 @@ export class ARC55 extends Contract {
         return this._addressCount(address).value !== 0;
     }
 
+    @abi.readonly
+    arc55_mbrSigIncrease(signatures: bytes64[]): uint64 {
+        // signatureBox costs:
+        // + Name: uint64 + address = 8 + 32 = 40
+        // + Body: abi + bytes = 2 + 64 * signatures.length
+        const mbrSigIncrease = (2500) + (400 * (40 + 2 + (64 * signatures.length)));
+
+        return mbrSigIncrease;
+    }
+
+    @abi.readonly
+    arc55_mbrTxnIncrease(transaction: bytes): uint64 {
+        // transactionBox costs:
+        // + Name: uint64 + uint8 = 8 + 1 = 9
+        // + Body: transaction.length
+        const mbrTxnIncrease = (2500) + (400 * (9 + transaction.length));
+
+        return mbrTxnIncrease;
+    }
+
 
     // ============ External Functions ============
     /**
@@ -215,10 +235,7 @@ export class ARC55 extends Contract {
     ): void {
         this.onlySigner();
 
-        // transactionBox costs:
-        // + Name: uint64 + uint8 = 8 + 1 = 9
-        // + Body: transaction.length
-        const mbrTxnIncrease = (2500) + (400 * (9 + transaction.length))
+        const mbrTxnIncrease = this.arc55_mbrTxnIncrease(transaction);
 
         verifyTxn(costs, {
             receiver: this.app.address,
@@ -245,7 +262,7 @@ export class ARC55 extends Contract {
     }
 
     /**
-     * Remove transaction from the app. The MBR associated with the transaction will be returned to the Msig address.
+     * Remove transaction from the app. The MBR associated with the transaction will be returned to the transaction sender.
      * @param transactionGroup Transaction Group nonce
      * @param index Transaction position within atomic group to remove
      */
@@ -260,9 +277,18 @@ export class ARC55 extends Contract {
             index: index,
         };
 
-        // Delete the box
-        //const num = this._convertIndexToNumber(index);
+        const txnLength = this._transactions(transactionBox).size;
         this._transactions(transactionBox).delete;
+
+        // transactionBox costs:
+        // + Name: uint64 + uint8 = 8 + 1 = 9
+        // + Body: txnLength
+        const mbrTxnDecrease = (2500) + (400 * (9 + txnLength));
+
+        sendPayment({
+            receiver: this.txn.sender,
+            amount: mbrTxnDecrease
+        });
 
         // Emit event
         this.TransactionRemoved.log({
@@ -284,10 +310,7 @@ export class ARC55 extends Contract {
     ): void {
         this.onlySigner();
 
-        // signatureBox costs:
-        // + Name: uint64 + address = 8 + 32 = 40
-        // + Body: signatures.length
-        const mbrSigIncrease = (2500) + (400 * (40 + signatures.length))
+        const mbrSigIncrease = this.arc55_mbrSigIncrease(signatures);
 
         verifyTxn(costs, {
             receiver: this.app.address,
@@ -329,8 +352,8 @@ export class ARC55 extends Contract {
 
         // signatureBox costs:
         // + Name: uint64 + address = 8 + 32 = 40
-        // + Body: signatures.length
-        const mbrSigDecrease = (2500) + (400 * (40 + sigLength))
+        // + Body: sigLength
+        const mbrSigDecrease = (2500) + (400 * (40 + sigLength));
 
         sendPayment({
             receiver: address,
