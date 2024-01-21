@@ -8,6 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@algorandfoundation/algokit-client-generator": "^2.4.0",
     "@algorandfoundation/tealscript": "^0.73.3"
   },
   "devDependencies": {
