@@ -27,8 +27,8 @@ export class ARC55 extends Contract {
     _signatures = BoxMap<TransactionSignatures, bytes64[]>({});
 
     // Signers
-    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 8, allowPotentialCollisions: true });
-    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 8, allowPotentialCollisions: true });
+    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31, allowPotentialCollisions: true });
+    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 31, allowPotentialCollisions: true });
 
 
     // ============ Events ============
@@ -153,32 +153,56 @@ export class ARC55 extends Contract {
 
     /**
      * Calculate the minimum balance requirement for storing a signature
-     * @param signatures Provided signature to store
+     * @param signaturesSize Size (in bytes) of the signatures to store
      * @returns Minimum balance requirement increase
      */
     @abi.readonly
-    arc55_mbrSigIncrease(signatures: bytes64[]): uint64 {
+    arc55_mbrSigIncrease(signaturesSize: uint64): uint64 {
+        let currentBalance = 0;
+        let minimumBalance = globals.minBalance;
+        if (this.app.address.hasBalance) {
+            currentBalance = this.app.address.balance;
+            minimumBalance = this.app.address.minBalance;
+        }
+
         // signatureBox costs:
         // + Name: uint64 + address = 8 + 32 = 40
         // + Body: abi + bytes = 2 + 64 * signatures.length
-        const mbrSigIncrease = (2500) + (400 * (40 + 2 + (64 * signatures.length)));
+        const mbrSigRequired = (2500) + (400 * (40 + 2 + (64 * signaturesSize)));
 
-        return mbrSigIncrease;
+        const newMinimumBalance = minimumBalance + mbrSigRequired;
+        if (currentBalance > newMinimumBalance) {
+            return 0;
+        }
+
+        return newMinimumBalance - currentBalance;
     }
 
     /**
      * Calculate the minimum balance requirement for storing a transaction
-     * @param transaction Provided transaction to store
+     * @param transactionSize Size (in bytes) of the transaction to store
      * @returns Minimum balance requirement increase
      */
     @abi.readonly
-    arc55_mbrTxnIncrease(transaction: bytes): uint64 {
+    arc55_mbrTxnIncrease(transactionSize: uint64): uint64 {
+        let currentBalance = 0;
+        let minimumBalance = globals.minBalance;
+        if (this.app.address.hasBalance) {
+            currentBalance = this.app.address.balance;
+            minimumBalance = this.app.address.minBalance;
+        }
+
         // transactionBox costs:
         // + Name: uint64 + uint8 = 8 + 1 = 9
         // + Body: transaction.length
-        const mbrTxnIncrease = (2500) + (400 * (9 + transaction.length));
+        const mbrTxnRequired = (2500) + (400 * (9 + transactionSize));
 
-        return mbrTxnIncrease;
+        const newMinimumBalance = minimumBalance + mbrTxnRequired;
+        if (currentBalance > newMinimumBalance) {
+            return 0;
+        }
+
+        return newMinimumBalance - currentBalance;
     }
 
 
@@ -245,13 +269,6 @@ export class ARC55 extends Contract {
     ): void {
         this.onlySigner();
 
-        const mbrTxnIncrease = this.arc55_mbrTxnIncrease(transaction);
-
-        verifyTxn(costs, {
-            receiver: this.app.address,
-            amount: mbrTxnIncrease
-        });
-
         assert(transactionGroup);
         assert(transactionGroup <= this._nonce.value);
 
@@ -260,15 +277,45 @@ export class ARC55 extends Contract {
             index: index,
         };
 
+        // If there are additional addTransactionContinued transactions
+        // following this transaction, concatenate all additional data.
+        // TODO: Store in box at each iteration
+        let transactionData = transaction;
+        let groupPosition = this.txn.groupIndex + 1;
+        if (groupPosition < globals.groupSize) {
+            do {
+                if (
+                    this.txnGroup[groupPosition].applicationID === this.txn.applicationID
+                    && this.txnGroup[groupPosition].applicationArgs[0] === method("arc55_addTransactionContinued(byte[])void")
+                ) {
+                    transactionData += extract3(this.txnGroup[groupPosition].applicationArgs[1], 2, 0);
+                }
+                groupPosition += 1;
+            } while (groupPosition < globals.groupSize);
+        }
+
+        const mbrTxnIncrease = this.arc55_mbrTxnIncrease(transactionData.length);
+
+        verifyTxn(costs, {
+            receiver: this.app.address,
+            amount: { greaterThanEqualTo: mbrTxnIncrease }
+        });
+
         // Store transaction in box
         //const num = this._convertIndexToNumber(index);
-        this._transactions(transactionBox).value = transaction;
+        this._transactions(transactionBox).value = transactionData;
 
         // Emit event
         this.TransactionAdded.log({
             transactionGroup: transactionGroup,
             transactionIndex: index
         });
+    }
+
+    arc55_addTransactionContinued(
+        transaction: bytes
+    ): void {
+        this.onlySigner();
     }
 
     /**
@@ -320,11 +367,11 @@ export class ARC55 extends Contract {
     ): void {
         this.onlySigner();
 
-        const mbrSigIncrease = this.arc55_mbrSigIncrease(signatures);
+        const mbrSigIncrease = this.arc55_mbrSigIncrease(signatures.length * 64);
 
         verifyTxn(costs, {
             receiver: this.app.address,
-            amount: mbrSigIncrease,
+            amount: { greaterThanEqualTo: mbrSigIncrease }
         });
 
         const signatureBox: TransactionSignatures = {

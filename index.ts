@@ -41,14 +41,6 @@ const msig_addr = algosdk.multisigAddress({
 });
 console.log(msig_addr);
 
-const init_mbr = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-    from: accounts[0].addr,
-    to: deployment.appAddress,
-    amount: 100000,
-    suggestedParams: await algod.getTransactionParams().do()
-});
-await algod.sendRawTransaction(init_mbr.signTxn(accounts[0].sk)).do();
-
 // New Transaction Group
 const new_transaction_group = await appClient.arc55NewTransactionGroup({}, {
     sender: accounts[0]
@@ -56,12 +48,6 @@ const new_transaction_group = await appClient.arc55NewTransactionGroup({}, {
 const transaction_group = new_transaction_group.return as bigint;
 
 // Add Transaction
-const atc = new algosdk.AtomicTransactionComposer();
-const sim = new algosdk.modelsv2.SimulateRequest({
-    txnGroups: [],
-    allowUnnamedResources: true,
-    allowEmptySignatures: true
-});
 const zero_payment = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     from: msig_addr,
     to: msig_addr,
@@ -70,7 +56,7 @@ const zero_payment = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     note: new Uint8Array(Buffer.from("Testing ARC-55 works"))
 });
 let txn_cost = await appClient.arc55MbrTxnIncrease({
-    transaction: zero_payment.toByte()
+    transactionSize: zero_payment.toByte().length
 }, {
     sender: accounts[0]
 });
@@ -93,17 +79,66 @@ const add_txn = await appClient.arc55AddTransaction({
     }
 });
 
+// Replace Transaction with a Large Transaction
+// TODO: Use specific value, not 2000.
+const large_transaction = algosdk.makeApplicationCallTxnFromObject({
+    from: msig_addr,
+    appIndex: 0,
+    onComplete: algosdk.OnApplicationComplete.DeleteApplicationOC,
+    approvalProgram: new Uint8Array(Buffer.from('CiABASJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJIIkgiSCJI', 'base64')),
+    clearProgram: new Uint8Array(Buffer.from('CiABASI=', 'base64')),
+    extraPages: 3,
+    suggestedParams: await algod.getTransactionParams().do()
+});
+const txn_size = large_transaction.toByte().length;
+const add_txn_cost = await appClient.arc55MbrTxnIncrease({
+    transactionSize: large_transaction.toByte().length
+}, {
+    sender: accounts[0]
+});
+
+const add_txn_mbr2 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+    from: accounts[0].addr,
+    to: deployment.appAddress,
+    amount: add_txn_cost.return as bigint,
+    suggestedParams: await algod.getTransactionParams().do()
+});
+const add_txn2 = await appClient.compose().arc55AddTransaction({
+    costs: add_txn_mbr2,
+    transactionGroup: transaction_group,
+    index: 0,
+    transaction: large_transaction.toByte().slice(0, 2000)
+}, {
+    sender: accounts[0],
+    sendParams: {
+        populateAppCallResources: true,
+        suppressLog: true
+    }
+});
+for (let n = 1; n < txn_size/2000; n++) {
+    await add_txn2.arc55AddTransactionContinued({
+        transaction: large_transaction.toByte().slice(2000 * n, 2000 * (n+1))
+    }, {
+        sender: accounts[0],
+        sendParams: {
+            populateAppCallResources: true,
+            suppressLog: true
+        }
+    });
+}
+await add_txn2.execute();
+
 // Set Signatures
-const sig_data = new Uint8Array(zero_payment.rawSignTxn(accounts[0].sk));
+const sig_data = new Uint8Array(large_transaction.rawSignTxn(accounts[0].sk));
 txn_cost = await appClient.arc55MbrSigIncrease({
-    signatures: [sig_data]
+    signaturesSize: sig_data.length
 }, {
     sender: accounts[0]
 });
 const set_sig_mbr = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     from: accounts[0].addr,
     to: deployment.appAddress,
-    amount: txn_cost.return as bigint,
+    amount: txn_cost.return as bigint + 100000n,
     suggestedParams: await algod.getTransactionParams().do()
 });
 const set_sig = await appClient.arc55SetSignatures({
@@ -114,7 +149,7 @@ const set_sig = await appClient.arc55SetSignatures({
     sender: accounts[0],
     sendParams: {
         populateAppCallResources: true,
-        suppressLog: true
+        suppressLog: false
     }
 });
 
