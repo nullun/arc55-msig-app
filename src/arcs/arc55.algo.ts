@@ -27,8 +27,8 @@ export class ARC55 extends Contract {
     _signatures = BoxMap<TransactionSignatures, bytes64[]>({});
 
     // Signers
-    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31, allowPotentialCollisions: true });
-    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 31, allowPotentialCollisions: true });
+    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31 });
+    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 31 });
 
 
     // ============ Events ============
@@ -217,19 +217,33 @@ export class ARC55 extends Contract {
 
         this._nonce.value = 0;
 
-        let index = 0;
+        // If any indexes were previously set, remove all
+        // previous addresses before deleting the indexes
+        let pIndex = 0;
+        while (this._indexToAddress(pIndex).exists) {
+            const address = this._indexToAddress(pIndex).value;
+            // Deleting a key which is already absent has no effect
+            // on the application global state. (In particular, it
+            // does not cause the program to fail.)
+            this._addressCount(address).delete;
+            this._indexToAddress(pIndex).delete;
+            pIndex += 1;
+        }
+
+        // Store all new addresses as indexes and counts
+        let nIndex = 0;
         let address: Address;
-        while (index < addresses.length) {
-            address = addresses[index];
+        while (nIndex < addresses.length) {
+            address = addresses[nIndex];
 
             // Store multisig index as key with address as value
-            this._indexToAddress(index).value = address;
+            this._indexToAddress(nIndex).value = address;
 
-            // Store address as key and counter as value, this is for
-            // ease of authentication, and tracking removal
-            this._addressCount(address).value = this._addressCount(address).value + 1;
+            // Store address as key and counter as value,
+            // this is for ease of authentication
+            this._addressCount(address).value += 1;
 
-            index = index + 1;
+            nIndex += 1;
         }
     }
 
