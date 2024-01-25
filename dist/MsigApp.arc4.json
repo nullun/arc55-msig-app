@@ -13,6 +13,15 @@
       }
     },
     {
+      "name": "arc55_nextTransactionGroup",
+      "readonly": true,
+      "args": [],
+      "returns": {
+        "type": "uint64",
+        "desc": "Next expected Transaction Group nonce"
+      }
+    },
+    {
       "name": "arc55_transaction",
       "desc": "Retrieve a transaction from a given transaction group",
       "readonly": true,
