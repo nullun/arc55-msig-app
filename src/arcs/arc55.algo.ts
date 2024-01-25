@@ -310,13 +310,12 @@ export class ARC55 extends Contract {
 
         const mbrTxnIncrease = this.arc55_mbrTxnIncrease(transactionData.length);
 
-        verifyTxn(costs, {
+        verifyPayTxn(costs, {
             receiver: this.app.address,
             amount: { greaterThanEqualTo: mbrTxnIncrease }
         });
 
         // Store transaction in box
-        //const num = this._convertIndexToNumber(index);
         this._transactions(transactionBox).value = transactionData;
 
         // Emit event

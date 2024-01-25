@@ -869,7 +869,7 @@ if2_end:
 	frame_bury 3 // mbrTxnIncrease: uint64
 
 	// src/arcs/arc55.algo.ts:313
-	// verifyTxn(costs, {
+	// verifyPayTxn(costs, {
 	//             receiver: this.app.address,
 	//             amount: { greaterThanEqualTo: mbrTxnIncrease }
 	//         })
@@ -887,7 +887,7 @@ if2_end:
 	>=
 	assert
 
-	// src/arcs/arc55.algo.ts:320
+	// src/arcs/arc55.algo.ts:319
 	// this._transactions(transactionBox).value = transactionData
 	frame_dig 0 // transactionBox: TransactionGroup
 	dup
@@ -896,7 +896,7 @@ if2_end:
 	frame_dig 1 // transactionData: byte[]
 	box_put
 
-	// src/arcs/arc55.algo.ts:323
+	// src/arcs/arc55.algo.ts:322
 	// this.TransactionAdded.log({
 	//             transactionGroup: transactionGroup,
 	//             transactionIndex: index
@@ -927,7 +927,7 @@ abi_route_arc55_addTransactionContinued:
 arc55_addTransactionContinued:
 	proto 1 0
 
-	// src/arcs/arc55.algo.ts:332
+	// src/arcs/arc55.algo.ts:331
 	// this.onlySigner()
 	callsub onlySigner
 	retsub
@@ -964,11 +964,11 @@ arc55_removeTransaction:
 	byte 0x
 	dupn 3
 
-	// src/arcs/arc55.algo.ts:344
+	// src/arcs/arc55.algo.ts:343
 	// this.onlySigner()
 	callsub onlySigner
 
-	// src/arcs/arc55.algo.ts:346
+	// src/arcs/arc55.algo.ts:345
 	// transactionBox: TransactionGroup = {
 	//             nonce: transactionGroup,
 	//             index: index,
@@ -981,19 +981,19 @@ arc55_removeTransaction:
 	concat
 	frame_bury 0 // transactionBox: TransactionGroup
 
-	// src/arcs/arc55.algo.ts:351
+	// src/arcs/arc55.algo.ts:350
 	// txnLength = this._transactions(transactionBox).size
 	frame_dig 0 // transactionBox: TransactionGroup
 	box_len
 	assert
 	frame_bury 1 // txnLength: uint64
 
-	// src/arcs/arc55.algo.ts:352
+	// src/arcs/arc55.algo.ts:351
 	// this._transactions(transactionBox).delete
 	frame_dig 0 // transactionBox: TransactionGroup
 	box_del
 
-	// src/arcs/arc55.algo.ts:357
+	// src/arcs/arc55.algo.ts:356
 	// mbrTxnDecrease = (2500) + (400 * (9 + txnLength))
 	int 2500
 	int 400
@@ -1004,7 +1004,7 @@ arc55_removeTransaction:
 	+
 	frame_bury 2 // mbrTxnDecrease: uint64
 
-	// src/arcs/arc55.algo.ts:359
+	// src/arcs/arc55.algo.ts:358
 	// sendPayment({
 	//             receiver: this.txn.sender,
 	//             amount: mbrTxnDecrease
@@ -1013,12 +1013,12 @@ arc55_removeTransaction:
 	int pay
 	itxn_field TypeEnum
 
-	// src/arcs/arc55.algo.ts:360
+	// src/arcs/arc55.algo.ts:359
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// src/arcs/arc55.algo.ts:361
+	// src/arcs/arc55.algo.ts:360
 	// amount: mbrTxnDecrease
 	frame_dig 2 // mbrTxnDecrease: uint64
 	itxn_field Amount
@@ -1030,7 +1030,7 @@ arc55_removeTransaction:
 	// Submit inner transaction
 	itxn_submit
 
-	// src/arcs/arc55.algo.ts:365
+	// src/arcs/arc55.algo.ts:364
 	// this.TransactionRemoved.log({
 	//             transactionGroup: transactionGroup,
 	//             transactionIndex: index
@@ -1084,11 +1084,11 @@ arc55_setSignatures:
 	byte 0x
 	dup
 
-	// src/arcs/arc55.algo.ts:382
+	// src/arcs/arc55.algo.ts:381
 	// this.onlySigner()
 	callsub onlySigner
 
-	// src/arcs/arc55.algo.ts:384
+	// src/arcs/arc55.algo.ts:383
 	// mbrSigIncrease = this.arc55_mbrSigIncrease(signatures.length * 64)
 	frame_dig -3 // signatures: bytes64[]
 	len
@@ -1099,7 +1099,7 @@ arc55_setSignatures:
 	callsub arc55_mbrSigIncrease
 	frame_bury 0 // mbrSigIncrease: uint64
 
-	// src/arcs/arc55.algo.ts:386
+	// src/arcs/arc55.algo.ts:385
 	// verifyTxn(costs, {
 	//             receiver: this.app.address,
 	//             amount: { greaterThanEqualTo: mbrSigIncrease }
@@ -1118,7 +1118,7 @@ arc55_setSignatures:
 	>=
 	assert
 
-	// src/arcs/arc55.algo.ts:391
+	// src/arcs/arc55.algo.ts:390
 	// signatureBox: TransactionSignatures = {
 	//             nonce: transactionGroup,
 	//             address: this.txn.sender
@@ -1129,7 +1129,7 @@ arc55_setSignatures:
 	concat
 	frame_bury 1 // signatureBox: TransactionSignatures
 
-	// src/arcs/arc55.algo.ts:396
+	// src/arcs/arc55.algo.ts:395
 	// this._signatures(signatureBox).value = signatures
 	frame_dig 1 // signatureBox: TransactionSignatures
 	dup
@@ -1146,7 +1146,7 @@ arc55_setSignatures:
 	concat
 	box_put
 
-	// src/arcs/arc55.algo.ts:399
+	// src/arcs/arc55.algo.ts:398
 	// this.SignatureSet.log({
 	//             transactionGroup: transactionGroup,
 	//             signer: this.txn.sender
@@ -1191,11 +1191,11 @@ arc55_clearSignatures:
 	byte 0x
 	dupn 3
 
-	// src/arcs/arc55.algo.ts:414
+	// src/arcs/arc55.algo.ts:413
 	// this.onlySigner()
 	callsub onlySigner
 
-	// src/arcs/arc55.algo.ts:416
+	// src/arcs/arc55.algo.ts:415
 	// signatureBox: TransactionSignatures = {
 	//             nonce: transactionGroup,
 	//             address: address
@@ -1206,19 +1206,19 @@ arc55_clearSignatures:
 	concat
 	frame_bury 0 // signatureBox: TransactionSignatures
 
-	// src/arcs/arc55.algo.ts:421
+	// src/arcs/arc55.algo.ts:420
 	// sigLength = this._signatures(signatureBox).size
 	frame_dig 0 // signatureBox: TransactionSignatures
 	box_len
 	assert
 	frame_bury 1 // sigLength: uint64
 
-	// src/arcs/arc55.algo.ts:422
+	// src/arcs/arc55.algo.ts:421
 	// this._signatures(signatureBox).delete
 	frame_dig 0 // signatureBox: TransactionSignatures
 	box_del
 
-	// src/arcs/arc55.algo.ts:427
+	// src/arcs/arc55.algo.ts:426
 	// mbrSigDecrease = (2500) + (400 * (40 + sigLength))
 	int 2500
 	int 400
@@ -1229,7 +1229,7 @@ arc55_clearSignatures:
 	+
 	frame_bury 2 // mbrSigDecrease: uint64
 
-	// src/arcs/arc55.algo.ts:429
+	// src/arcs/arc55.algo.ts:428
 	// sendPayment({
 	//             receiver: address,
 	//             amount: mbrSigDecrease
@@ -1238,12 +1238,12 @@ arc55_clearSignatures:
 	int pay
 	itxn_field TypeEnum
 
-	// src/arcs/arc55.algo.ts:430
+	// src/arcs/arc55.algo.ts:429
 	// receiver: address
 	frame_dig -2 // address: Address
 	itxn_field Receiver
 
-	// src/arcs/arc55.algo.ts:431
+	// src/arcs/arc55.algo.ts:430
 	// amount: mbrSigDecrease
 	frame_dig 2 // mbrSigDecrease: uint64
 	itxn_field Amount
@@ -1255,7 +1255,7 @@ arc55_clearSignatures:
 	// Submit inner transaction
 	itxn_submit
 
-	// src/arcs/arc55.algo.ts:435
+	// src/arcs/arc55.algo.ts:434
 	// this.SignatureSet.log({
 	//             transactionGroup: transactionGroup,
 	//             signer: address
