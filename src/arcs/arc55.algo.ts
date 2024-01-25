@@ -285,7 +285,6 @@ export class ARC55 extends Contract {
 
         // If there are additional addTransactionContinued transactions
         // following this transaction, concatenate all additional data.
-        // TODO: Store in box at each iteration
         let transactionData = transaction;
         let groupPosition = this.txn.groupIndex + 1;
         if (groupPosition < globals.groupSize) {
