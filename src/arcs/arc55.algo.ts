@@ -100,6 +100,15 @@ export class ARC55 extends Contract {
     }
 
     /**
+     * 
+     * @returns Next expected Transaction Group nonce
+     */
+    @abi.readonly
+    arc55_nextTransactionGroup(): uint64 {
+        return this._nonce.value + 1;
+    }
+
+    /**
      * Retrieve a transaction from a given transaction group
      * @param transactionGroup Transaction Group nonce
      * @param transactionIndex Index of transaction within group
@@ -254,7 +263,7 @@ export class ARC55 extends Contract {
     arc55_newTransactionGroup(): uint64 {
         this.onlySigner();
 
-        const n = this._nonce.value + 1;
+        const n = this.arc55_nextTransactionGroup();
         this._nonce.value = n;
 
         return n;
