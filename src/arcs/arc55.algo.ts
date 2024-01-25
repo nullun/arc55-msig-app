@@ -158,12 +158,8 @@ export class ARC55 extends Contract {
      */
     @abi.readonly
     arc55_mbrSigIncrease(signaturesSize: uint64): uint64 {
-        let currentBalance = 0;
-        let minimumBalance = globals.minBalance;
-        if (this.app.address.hasBalance) {
-            currentBalance = this.app.address.balance;
-            minimumBalance = this.app.address.minBalance;
-        }
+        const currentBalance = this.app.address.balance;
+        const minimumBalance = this.app.address.minBalance;
 
         // signatureBox costs:
         // + Name: uint64 + address = 8 + 32 = 40
@@ -185,12 +181,8 @@ export class ARC55 extends Contract {
      */
     @abi.readonly
     arc55_mbrTxnIncrease(transactionSize: uint64): uint64 {
-        let currentBalance = 0;
-        let minimumBalance = globals.minBalance;
-        if (this.app.address.hasBalance) {
-            currentBalance = this.app.address.balance;
-            minimumBalance = this.app.address.minBalance;
-        }
+        const currentBalance = this.app.address.balance;
+        const minimumBalance = this.app.address.minBalance;
 
         // transactionBox costs:
         // + Name: uint64 + uint8 = 8 + 1 = 9
