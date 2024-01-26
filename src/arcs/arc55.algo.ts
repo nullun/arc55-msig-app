@@ -88,6 +88,10 @@ export class ARC55 extends Contract {
         assert(this.txn.sender === globals.creatorAddress);
     }
 
+    protected isCreator(): boolean {
+        return this.txn.sender === globals.creatorAddress;
+    }
+
 
     // ============ Read Only ============
     /**
@@ -261,7 +265,9 @@ export class ARC55 extends Contract {
      * @returns transactionGroup Transaction Group nonce
      */
     arc55_newTransactionGroup(): uint64 {
-        this.onlySigner();
+        if (!this.isCreator()) {
+            this.onlySigner();
+        }
 
         const n = this.arc55_nextTransactionGroup();
         this._nonce.value = n;
@@ -282,7 +288,9 @@ export class ARC55 extends Contract {
         index: uint8,
         transaction: bytes
     ): void {
-        this.onlySigner();
+        if (!this.isCreator()) {
+            this.onlySigner();
+        }
 
         assert(transactionGroup);
         assert(transactionGroup <= this._nonce.value);
@@ -328,7 +336,9 @@ export class ARC55 extends Contract {
     arc55_addTransactionContinued(
         transaction: bytes
     ): void {
-        this.onlySigner();
+        if (!this.isCreator()) {
+            this.onlySigner();
+        }
     }
 
     /**
@@ -340,7 +350,9 @@ export class ARC55 extends Contract {
         transactionGroup: uint64,
         index: uint8
     ): void {
-        this.onlySigner();
+        if (!this.isCreator()) {
+            this.onlySigner();
+        }
 
         const transactionBox: TransactionGroup = {
             nonce: transactionGroup,
