@@ -352,13 +352,11 @@ arc55_mbrSigIncrease:
 	frame_bury 1 // minimumBalance: uint64
 
 	// src/arcs/arc55.algo.ts:176
-	// mbrSigRequired = (2500) + (400 * (40 + 2 + (64 * signaturesSize)))
+	// mbrSigRequired = (2500) + (400 * (40 + 2 + signaturesSize))
 	int 2500
 	int 400
 	int 42
-	int 64
 	frame_dig -1 // signaturesSize: uint64
-	*
 	+
 	*
 	+
@@ -373,10 +371,10 @@ arc55_mbrSigIncrease:
 
 	// if0_condition
 	// src/arcs/arc55.algo.ts:179
-	// currentBalance > newMinimumBalance
+	// currentBalance >= newMinimumBalance
 	frame_dig 0 // currentBalance: uint64
 	frame_dig 3 // newMinimumBalance: uint64
-	>
+	>=
 	bz if0_end
 
 	// if0_consequent
@@ -468,10 +466,10 @@ arc55_mbrTxnIncrease:
 
 	// if1_condition
 	// src/arcs/arc55.algo.ts:202
-	// currentBalance > newMinimumBalance
+	// currentBalance >= newMinimumBalance
 	frame_dig 0 // currentBalance: uint64
 	frame_dig 3 // newMinimumBalance: uint64
-	>
+	>=
 	bz if1_end
 
 	// if1_consequent
@@ -1100,7 +1098,7 @@ arc55_setSignatures:
 	frame_bury 0 // mbrSigIncrease: uint64
 
 	// src/arcs/arc55.algo.ts:385
-	// verifyTxn(costs, {
+	// verifyPayTxn(costs, {
 	//             receiver: this.app.address,
 	//             amount: { greaterThanEqualTo: mbrSigIncrease }
 	//         })

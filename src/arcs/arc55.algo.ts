@@ -172,11 +172,11 @@ export class ARC55 extends Contract {
 
         // signatureBox costs:
         // + Name: uint64 + address = 8 + 32 = 40
-        // + Body: abi + bytes = 2 + 64 * signatures.length
-        const mbrSigRequired = (2500) + (400 * (40 + 2 + (64 * signaturesSize)));
+        // + Body: abi + bytes = 2 + signaturesSize
+        const mbrSigRequired = (2500) + (400 * (40 + 2 + signaturesSize));
 
         const newMinimumBalance = minimumBalance + mbrSigRequired;
-        if (currentBalance > newMinimumBalance) {
+        if (currentBalance >= newMinimumBalance) {
             return 0;
         }
 
@@ -195,11 +195,11 @@ export class ARC55 extends Contract {
 
         // transactionBox costs:
         // + Name: uint64 + uint8 = 8 + 1 = 9
-        // + Body: transaction.length
+        // + Body: transactionSize
         const mbrTxnRequired = (2500) + (400 * (9 + transactionSize));
 
         const newMinimumBalance = minimumBalance + mbrTxnRequired;
-        if (currentBalance > newMinimumBalance) {
+        if (currentBalance >= newMinimumBalance) {
             return 0;
         }
 
@@ -382,7 +382,7 @@ export class ARC55 extends Contract {
 
         const mbrSigIncrease = this.arc55_mbrSigIncrease(signatures.length * 64);
 
-        verifyTxn(costs, {
+        verifyPayTxn(costs, {
             receiver: this.app.address,
             amount: { greaterThanEqualTo: mbrSigIncrease }
         });

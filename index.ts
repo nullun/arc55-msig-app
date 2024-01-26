@@ -100,7 +100,7 @@ const add_txn_cost = await appClient.arc55MbrTxnIncrease({
 const add_txn_mbr2 = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     from: accounts[0].addr,
     to: deployment.appAddress,
-    amount: add_txn_cost.return as bigint,
+    amount: <bigint>add_txn_cost.return - <bigint>txn_cost.return + 100000n, // We subtrack the previous cost, but keep the min 0.1
     suggestedParams: await algod.getTransactionParams().do()
 });
 const add_txn2 = await appClient.compose().arc55AddTransaction({
@@ -138,7 +138,7 @@ txn_cost = await appClient.arc55MbrSigIncrease({
 const set_sig_mbr = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
     from: accounts[0].addr,
     to: deployment.appAddress,
-    amount: txn_cost.return as bigint + 100000n,
+    amount: txn_cost.return as bigint,
     suggestedParams: await algod.getTransactionParams().do()
 });
 const set_sig = await appClient.arc55SetSignatures({
