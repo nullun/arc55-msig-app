@@ -88,6 +88,10 @@ export class ARC55 extends Contract {
         assert(this.txn.sender === globals.creatorAddress);
     }
 
+    /**
+     * Find out if the transaction sender is the contract creator
+     * @returns True if sender is creator
+     */
     protected isCreator(): boolean {
         return this.txn.sender === globals.creatorAddress;
     }
