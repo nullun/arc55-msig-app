@@ -3,7 +3,7 @@
   "desc": "",
   "methods": [
     {
-      "name": "arc55_threshold",
+      "name": "arc55_getThreshold",
       "desc": "Retrieve the signature threshold required for the multisignature to be submitted",
       "readonly": true,
       "args": [],
@@ -22,7 +22,7 @@
       }
     },
     {
-      "name": "arc55_transaction",
+      "name": "arc55_getTransaction",
       "desc": "Retrieve a transaction from a given transaction group",
       "readonly": true,
       "args": [
@@ -43,7 +43,7 @@
       }
     },
     {
-      "name": "arc55_signatures",
+      "name": "arc55_getSignatures",
       "desc": "Retrieve a list of signatures for a given transaction group nonce and address",
       "readonly": true,
       "args": [
@@ -325,7 +325,13 @@
     {
       "name": "deploy",
       "desc": "Deploy a new On-Chain Msig App.",
-      "args": [],
+      "args": [
+        {
+          "name": "admin",
+          "type": "address",
+          "desc": "Address of person responsible for calling`arc55_setup`"
+        }
+      ],
       "returns": {
         "type": "uint64",
         "desc": "Msig App Application ID"

@@ -4,10 +4,18 @@ import { ARC55 } from './arcs/arc55.algo';
 class MsigApp extends Contract.extend(ARC55) {
     /**
      * Deploy a new On-Chain Msig App.
+     * @param admin Address of person responsible for calling `arc55_setup`
      * @returns Msig App Application ID
      */
     @allow.create("NoOp")
-    deploy(): Application {
+    deploy(admin: Address): Application {
+        // If no-one is set, default to the sender/creator
+        if (admin != globals.zeroAddress) {
+            this.arc55_admin.value = admin;
+        } else {
+            this.arc55_admin.value = this.txn.sender;
+        }
+
         return globals.currentApplicationID;
     }
 
@@ -16,7 +24,7 @@ class MsigApp extends Contract.extend(ARC55) {
      */
     @allow.call("UpdateApplication")
     update(): void {
-        this.onlyCreator();
+        this.onlyAdmin();
     }
 
     /**
@@ -24,7 +32,7 @@ class MsigApp extends Contract.extend(ARC55) {
      */
     @allow.call("DeleteApplication")
     destroy(): void {
-        this.onlyCreator();
+        this.onlyAdmin();
 
         sendPayment({
             amount: 0,

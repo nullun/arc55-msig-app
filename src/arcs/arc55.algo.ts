@@ -15,20 +15,23 @@ export class ARC55 extends Contract {
 
     // ============ State Variables ============
     // Number of signatures requires
-    _threshold = GlobalStateKey<uint64>({});
+    arc55_threshold = GlobalStateKey<uint64>({});
 
     // Incrementing nonce for separating different groups of transactions
-    _nonce = GlobalStateKey<uint64>({});
+    arc55_nonce = GlobalStateKey<uint64>({});
+
+    // Admin responsible for setup
+    arc55_admin = GlobalStateKey<Address>({});
 
     // Transactions
-    _transactions = BoxMap<TransactionGroup, bytes>({});
+    arc55_transactions = BoxMap<TransactionGroup, bytes>({});
 
     // Signatures
-    _signatures = BoxMap<TransactionSignatures, bytes64[]>({});
+    arc55_signatures = BoxMap<TransactionSignatures, bytes64[]>({});
 
     // Signers
-    _indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31 });
-    _addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 31 });
+    arc55_indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31, allowPotentialCollisions: true });
+    arc55_addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 30, allowPotentialCollisions: true });
 
 
     // ============ Events ============
@@ -78,22 +81,22 @@ export class ARC55 extends Contract {
      * Check the transaction sender is a signer for the multisig
      */
     protected onlySigner(): void {
-        assert(this._addressCount(this.txn.sender).exists);
+        assert(this.arc55_addressCount(this.txn.sender).exists);
     }
 
     /**
-     * Check the transaction sender is the contract creator
+     * Check the transaction sender is the admin
      */
-    protected onlyCreator(): void {
-        assert(this.txn.sender === globals.creatorAddress);
+    protected onlyAdmin(): void {
+        assert(this.txn.sender === this.arc55_admin.value);
     }
 
     /**
-     * Find out if the transaction sender is the contract creator
-     * @returns True if sender is creator
+     * Find out if the transaction sender is the admin
+     * @returns True if sender is admin
      */
-    protected isCreator(): boolean {
-        return this.txn.sender === globals.creatorAddress;
+    protected isAdmin(): boolean {
+        return this.txn.sender === this.arc55_admin.value;
     }
 
 
@@ -103,8 +106,8 @@ export class ARC55 extends Contract {
      * @returns Multisignature threshold
      */
     @abi.readonly
-    arc55_threshold(): uint64 {
-        return this._threshold.value;
+    arc55_getThreshold(): uint64 {
+        return this.arc55_threshold.value;
     }
 
     /**
@@ -113,7 +116,7 @@ export class ARC55 extends Contract {
      */
     @abi.readonly
     arc55_nextTransactionGroup(): uint64 {
-        return this._nonce.value + 1;
+        return this.arc55_nonce.value + 1;
     }
 
     /**
@@ -123,13 +126,13 @@ export class ARC55 extends Contract {
      * @returns A single transaction at the specified index for the transaction group nonce
      */
     @abi.readonly
-    arc55_transaction(transactionGroup: uint64, transactionIndex: uint8): bytes {
+    arc55_getTransaction(transactionGroup: uint64, transactionIndex: uint8): bytes {
         const transactionBox: TransactionGroup = {
             nonce: transactionGroup,
             index: transactionIndex
         };
 
-        return this._transactions(transactionBox).value;
+        return this.arc55_transactions(transactionBox).value;
     }
 
     /**
@@ -139,13 +142,13 @@ export class ARC55 extends Contract {
      * @returns Array of signatures
      */
     @abi.readonly
-    arc55_signatures(transactionGroup: uint64, signer: Address): bytes64[] {
+    arc55_getSignatures(transactionGroup: uint64, signer: Address): bytes64[] {
         const signatureBox: TransactionSignatures = {
             nonce: transactionGroup,
             address: signer
         };
 
-        return this._signatures(signatureBox).value;
+        return this.arc55_signatures(signatureBox).value;
     }
 
     /**
@@ -155,7 +158,7 @@ export class ARC55 extends Contract {
      */
     @abi.readonly
     arc55_signerByIndex(index: uint64): Address {
-        return this._indexToAddress(index).value;
+        return this.arc55_indexToAddress(index).value;
     }
 
     /**
@@ -165,7 +168,7 @@ export class ARC55 extends Contract {
      */
     @abi.readonly
     arc55_isSigner(address: Address): boolean {
-        return this._addressCount(address).value !== 0;
+        return this.arc55_addressCount(address).value !== 0;
     }
 
     /**
@@ -225,25 +228,25 @@ export class ARC55 extends Contract {
         threshold: uint8,
         addresses: Address[]
     ): void {
-        assert(!this._nonce.value);
-        this.onlyCreator();
+        assert(!this.arc55_nonce.value);
+        this.onlyAdmin();
 
         const t: uint64 = btoi(rawBytes(threshold));
         assert(t);
-        this._threshold.value = t;
+        this.arc55_threshold.value = t;
 
-        this._nonce.value = 0;
+        this.arc55_nonce.value = 0;
 
         // If any indexes were previously set, remove all
         // previous addresses before deleting the indexes
         let pIndex = 0;
-        while (this._indexToAddress(pIndex).exists) {
-            const address = this._indexToAddress(pIndex).value;
+        while (this.arc55_indexToAddress(pIndex).exists) {
+            const address = this.arc55_indexToAddress(pIndex).value;
             // Deleting a key which is already absent has no effect
             // on the application global state. (In particular, it
             // does not cause the program to fail.)
-            this._addressCount(address).delete;
-            this._indexToAddress(pIndex).delete;
+            this.arc55_addressCount(address).delete;
+            this.arc55_indexToAddress(pIndex).delete;
             pIndex += 1;
         }
 
@@ -254,11 +257,11 @@ export class ARC55 extends Contract {
             address = addresses[nIndex];
 
             // Store multisig index as key with address as value
-            this._indexToAddress(nIndex).value = address;
+            this.arc55_indexToAddress(nIndex).value = address;
 
             // Store address as key and counter as value,
             // this is for ease of authentication
-            this._addressCount(address).value += 1;
+            this.arc55_addressCount(address).value += 1;
 
             nIndex += 1;
         }
@@ -269,12 +272,12 @@ export class ARC55 extends Contract {
      * @returns transactionGroup Transaction Group nonce
      */
     arc55_newTransactionGroup(): uint64 {
-        if (!this.isCreator()) {
+        if (!this.isAdmin()) {
             this.onlySigner();
         }
 
         const n = this.arc55_nextTransactionGroup();
-        this._nonce.value = n;
+        this.arc55_nonce.value = n;
 
         return n;
     }
@@ -292,12 +295,12 @@ export class ARC55 extends Contract {
         index: uint8,
         transaction: bytes
     ): void {
-        if (!this.isCreator()) {
+        if (!this.isAdmin()) {
             this.onlySigner();
         }
 
         assert(transactionGroup);
-        assert(transactionGroup <= this._nonce.value);
+        assert(transactionGroup <= this.arc55_nonce.value);
 
         const transactionBox: TransactionGroup = {
             nonce: transactionGroup,
@@ -328,7 +331,7 @@ export class ARC55 extends Contract {
         });
 
         // Store transaction in box
-        this._transactions(transactionBox).value = transactionData;
+        this.arc55_transactions(transactionBox).value = transactionData;
 
         // Emit event
         this.TransactionAdded.log({
@@ -340,7 +343,7 @@ export class ARC55 extends Contract {
     arc55_addTransactionContinued(
         transaction: bytes
     ): void {
-        if (!this.isCreator()) {
+        if (!this.isAdmin()) {
             this.onlySigner();
         }
     }
@@ -354,7 +357,7 @@ export class ARC55 extends Contract {
         transactionGroup: uint64,
         index: uint8
     ): void {
-        if (!this.isCreator()) {
+        if (!this.isAdmin()) {
             this.onlySigner();
         }
 
@@ -363,8 +366,8 @@ export class ARC55 extends Contract {
             index: index,
         };
 
-        const txnLength = this._transactions(transactionBox).size;
-        this._transactions(transactionBox).delete;
+        const txnLength = this.arc55_transactions(transactionBox).size;
+        this.arc55_transactions(transactionBox).delete;
 
         // transactionBox costs:
         // + Name: uint64 + uint8 = 8 + 1 = 9
@@ -408,7 +411,7 @@ export class ARC55 extends Contract {
             address: this.txn.sender
         };
 
-        this._signatures(signatureBox).value = signatures;
+        this.arc55_signatures(signatureBox).value = signatures;
 
         // Emit event
         this.SignatureSet.log({
@@ -433,8 +436,8 @@ export class ARC55 extends Contract {
             address: address
         };
 
-        const sigLength = this._signatures(signatureBox).size;
-        this._signatures(signatureBox).delete;
+        const sigLength = this.arc55_signatures(signatureBox).size;
+        this.arc55_signatures(signatureBox).delete;
 
         // signatureBox costs:
         // + Name: uint64 + address = 8 + 32 = 40

@@ -27,8 +27,8 @@ NOT_IMPLEMENTED:
 onlySigner:
 	proto 0 0
 
-	// src/arcs/arc55.algo.ts:81
-	// assert(this._addressCount(this.txn.sender).exists)
+	// src/arcs/arc55.algo.ts:84
+	// assert(this.arc55_addressCount(this.txn.sender).exists)
 	txna Applications 0
 	txn Sender
 	app_global_get_ex
@@ -37,57 +37,59 @@ onlySigner:
 	assert
 	retsub
 
-// onlyCreator(): void
+// onlyAdmin(): void
 //
-// Check the transaction sender is the contract creator
-onlyCreator:
+// Check the transaction sender is the admin
+onlyAdmin:
 	proto 0 0
 
-	// src/arcs/arc55.algo.ts:88
-	// assert(this.txn.sender === globals.creatorAddress)
+	// src/arcs/arc55.algo.ts:91
+	// assert(this.txn.sender === this.arc55_admin.value)
 	txn Sender
-	global CreatorAddress
+	byte 0x61726335355f61646d696e // "arc55_admin"
+	app_global_get
 	==
 	assert
 	retsub
 
-// isCreator(): boolean
+// isAdmin(): boolean
 //
-// Find out if the transaction sender is the contract creator
-// @returns True if sender is creator
-isCreator:
+// Find out if the transaction sender is the admin
+// @returns True if sender is admin
+isAdmin:
 	proto 0 1
 
-	// src/arcs/arc55.algo.ts:96
-	// return this.txn.sender === globals.creatorAddress;
+	// src/arcs/arc55.algo.ts:99
+	// return this.txn.sender === this.arc55_admin.value;
 	txn Sender
-	global CreatorAddress
+	byte 0x61726335355f61646d696e // "arc55_admin"
+	app_global_get
 	==
 	retsub
 
-// arc55_threshold()uint64
-abi_route_arc55_threshold:
+// arc55_getThreshold()uint64
+abi_route_arc55_getThreshold:
 	// The ABI return prefix
 	byte 0x151f7c75
 
-	// execute arc55_threshold()uint64
-	callsub arc55_threshold
+	// execute arc55_getThreshold()uint64
+	callsub arc55_getThreshold
 	itob
 	concat
 	log
 	int 1
 	return
 
-// arc55_threshold(): uint64
+// arc55_getThreshold(): uint64
 //
 // Retrieve the signature threshold required for the multisignature to be submitted
 // @returns Multisignature threshold
-arc55_threshold:
+arc55_getThreshold:
 	proto 0 1
 
-	// src/arcs/arc55.algo.ts:107
-	// return this._threshold.value;
-	byte 0x5f7468726573686f6c64 // "_threshold"
+	// src/arcs/arc55.algo.ts:110
+	// return this.arc55_threshold.value;
+	byte 0x61726335355f7468726573686f6c64 // "arc55_threshold"
 	app_global_get
 	retsub
 
@@ -111,16 +113,16 @@ abi_route_arc55_nextTransactionGroup:
 arc55_nextTransactionGroup:
 	proto 0 1
 
-	// src/arcs/arc55.algo.ts:116
-	// return this._nonce.value + 1;
-	byte 0x5f6e6f6e6365 // "_nonce"
+	// src/arcs/arc55.algo.ts:119
+	// return this.arc55_nonce.value + 1;
+	byte 0x61726335355f6e6f6e6365 // "arc55_nonce"
 	app_global_get
 	int 1
 	+
 	retsub
 
-// arc55_transaction(uint64,uint8)byte[]
-abi_route_arc55_transaction:
+// arc55_getTransaction(uint64,uint8)byte[]
+abi_route_arc55_getTransaction:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -137,8 +139,8 @@ abi_route_arc55_transaction:
 	txna ApplicationArgs 1
 	btoi
 
-	// execute arc55_transaction(uint64,uint8)byte[]
-	callsub arc55_transaction
+	// execute arc55_getTransaction(uint64,uint8)byte[]
+	callsub arc55_getTransaction
 	dup
 	len
 	itob
@@ -150,19 +152,19 @@ abi_route_arc55_transaction:
 	int 1
 	return
 
-// arc55_transaction(transactionGroup: uint64, transactionIndex: uint8): bytes
+// arc55_getTransaction(transactionGroup: uint64, transactionIndex: uint8): bytes
 //
 // Retrieve a transaction from a given transaction group
 // @param transactionGroup Transaction Group nonce
 // @param transactionIndex Index of transaction within group
 // @returns A single transaction at the specified index for the transaction group nonce
-arc55_transaction:
+arc55_getTransaction:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// src/arcs/arc55.algo.ts:127
+	// src/arcs/arc55.algo.ts:130
 	// transactionBox: TransactionGroup = {
 	//             nonce: transactionGroup,
 	//             index: transactionIndex
@@ -175,8 +177,8 @@ arc55_transaction:
 	concat
 	frame_bury 0 // transactionBox: TransactionGroup
 
-	// src/arcs/arc55.algo.ts:132
-	// return this._transactions(transactionBox).value;
+	// src/arcs/arc55.algo.ts:135
+	// return this.arc55_transactions(transactionBox).value;
 	frame_dig 0 // transactionBox: TransactionGroup
 	box_get
 	assert
@@ -185,8 +187,8 @@ arc55_transaction:
 	frame_bury 0
 	retsub
 
-// arc55_signatures(uint64,address)byte[64][]
-abi_route_arc55_signatures:
+// arc55_getSignatures(uint64,address)byte[64][]
+abi_route_arc55_getSignatures:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -202,8 +204,8 @@ abi_route_arc55_signatures:
 	txna ApplicationArgs 1
 	btoi
 
-	// execute arc55_signatures(uint64,address)byte[64][]
-	callsub arc55_signatures
+	// execute arc55_getSignatures(uint64,address)byte[64][]
+	callsub arc55_getSignatures
 	dup
 	len
 	int 64
@@ -217,19 +219,19 @@ abi_route_arc55_signatures:
 	int 1
 	return
 
-// arc55_signatures(transactionGroup: uint64, signer: Address): bytes64[]
+// arc55_getSignatures(transactionGroup: uint64, signer: Address): bytes64[]
 //
 // Retrieve a list of signatures for a given transaction group nonce and address
 // @param transactionGroup Transaction Group nonce
 // @param signer Address you want to retrieve signatures for
 // @returns Array of signatures
-arc55_signatures:
+arc55_getSignatures:
 	proto 2 1
 
 	// Push empty bytes after the frame pointer to reserve space for local variables
 	byte 0x
 
-	// src/arcs/arc55.algo.ts:143
+	// src/arcs/arc55.algo.ts:146
 	// signatureBox: TransactionSignatures = {
 	//             nonce: transactionGroup,
 	//             address: signer
@@ -240,8 +242,8 @@ arc55_signatures:
 	concat
 	frame_bury 0 // signatureBox: TransactionSignatures
 
-	// src/arcs/arc55.algo.ts:148
-	// return this._signatures(signatureBox).value;
+	// src/arcs/arc55.algo.ts:151
+	// return this.arc55_signatures(signatureBox).value;
 	frame_dig 0 // signatureBox: TransactionSignatures
 	int 2
 	int 0
@@ -275,8 +277,8 @@ abi_route_arc55_signerByIndex:
 arc55_signerByIndex:
 	proto 1 1
 
-	// src/arcs/arc55.algo.ts:158
-	// return this._indexToAddress(index).value;
+	// src/arcs/arc55.algo.ts:161
+	// return this.arc55_indexToAddress(index).value;
 	frame_dig -1 // index: uint64
 	itob
 	app_global_get
@@ -314,8 +316,8 @@ abi_route_arc55_isSigner:
 arc55_isSigner:
 	proto 1 1
 
-	// src/arcs/arc55.algo.ts:168
-	// return this._addressCount(address).value !== 0;
+	// src/arcs/arc55.algo.ts:171
+	// return this.arc55_addressCount(address).value !== 0;
 	frame_dig -1 // address: Address
 	app_global_get
 	int 0
@@ -351,21 +353,21 @@ arc55_mbrSigIncrease:
 	byte 0x
 	dupn 4
 
-	// src/arcs/arc55.algo.ts:178
+	// src/arcs/arc55.algo.ts:181
 	// currentBalance = this.app.address.balance
 	global CurrentApplicationAddress
 	acct_params_get AcctBalance
 	pop
 	frame_bury 0 // currentBalance: uint64
 
-	// src/arcs/arc55.algo.ts:179
+	// src/arcs/arc55.algo.ts:182
 	// minimumBalance = this.app.address.minBalance
 	global CurrentApplicationAddress
 	acct_params_get AcctMinBalance
 	pop
 	frame_bury 1 // minimumBalance: uint64
 
-	// src/arcs/arc55.algo.ts:184
+	// src/arcs/arc55.algo.ts:187
 	// mbrSigRequired = (2500) + (400 * (40 + 2 + signaturesSize))
 	int 2500
 	int 400
@@ -376,7 +378,7 @@ arc55_mbrSigIncrease:
 	+
 	frame_bury 2 // mbrSigRequired: uint64
 
-	// src/arcs/arc55.algo.ts:186
+	// src/arcs/arc55.algo.ts:189
 	// newMinimumBalance = minimumBalance + mbrSigRequired
 	frame_dig 1 // minimumBalance: uint64
 	frame_dig 2 // mbrSigRequired: uint64
@@ -384,7 +386,7 @@ arc55_mbrSigIncrease:
 	frame_bury 3 // newMinimumBalance: uint64
 
 	// if0_condition
-	// src/arcs/arc55.algo.ts:187
+	// src/arcs/arc55.algo.ts:190
 	// currentBalance >= newMinimumBalance
 	frame_dig 0 // currentBalance: uint64
 	frame_dig 3 // newMinimumBalance: uint64
@@ -392,7 +394,7 @@ arc55_mbrSigIncrease:
 	bz if0_end
 
 	// if0_consequent
-	// src/arcs/arc55.algo.ts:188
+	// src/arcs/arc55.algo.ts:191
 	// return 0;
 	int 0
 
@@ -404,7 +406,7 @@ arc55_mbrSigIncrease:
 	retsub
 
 if0_end:
-	// src/arcs/arc55.algo.ts:191
+	// src/arcs/arc55.algo.ts:194
 	// return newMinimumBalance - currentBalance;
 	frame_dig 3 // newMinimumBalance: uint64
 	frame_dig 0 // currentBalance: uint64
@@ -446,21 +448,21 @@ arc55_mbrTxnIncrease:
 	byte 0x
 	dupn 4
 
-	// src/arcs/arc55.algo.ts:201
+	// src/arcs/arc55.algo.ts:204
 	// currentBalance = this.app.address.balance
 	global CurrentApplicationAddress
 	acct_params_get AcctBalance
 	pop
 	frame_bury 0 // currentBalance: uint64
 
-	// src/arcs/arc55.algo.ts:202
+	// src/arcs/arc55.algo.ts:205
 	// minimumBalance = this.app.address.minBalance
 	global CurrentApplicationAddress
 	acct_params_get AcctMinBalance
 	pop
 	frame_bury 1 // minimumBalance: uint64
 
-	// src/arcs/arc55.algo.ts:207
+	// src/arcs/arc55.algo.ts:210
 	// mbrTxnRequired = (2500) + (400 * (9 + transactionSize))
 	int 2500
 	int 400
@@ -471,7 +473,7 @@ arc55_mbrTxnIncrease:
 	+
 	frame_bury 2 // mbrTxnRequired: uint64
 
-	// src/arcs/arc55.algo.ts:209
+	// src/arcs/arc55.algo.ts:212
 	// newMinimumBalance = minimumBalance + mbrTxnRequired
 	frame_dig 1 // minimumBalance: uint64
 	frame_dig 2 // mbrTxnRequired: uint64
@@ -479,7 +481,7 @@ arc55_mbrTxnIncrease:
 	frame_bury 3 // newMinimumBalance: uint64
 
 	// if1_condition
-	// src/arcs/arc55.algo.ts:210
+	// src/arcs/arc55.algo.ts:213
 	// currentBalance >= newMinimumBalance
 	frame_dig 0 // currentBalance: uint64
 	frame_dig 3 // newMinimumBalance: uint64
@@ -487,7 +489,7 @@ arc55_mbrTxnIncrease:
 	bz if1_end
 
 	// if1_consequent
-	// src/arcs/arc55.algo.ts:211
+	// src/arcs/arc55.algo.ts:214
 	// return 0;
 	int 0
 
@@ -499,7 +501,7 @@ arc55_mbrTxnIncrease:
 	retsub
 
 if1_end:
-	// src/arcs/arc55.algo.ts:214
+	// src/arcs/arc55.algo.ts:217
 	// return newMinimumBalance - currentBalance;
 	frame_dig 3 // newMinimumBalance: uint64
 	frame_dig 0 // currentBalance: uint64
@@ -544,18 +546,18 @@ arc55_setup:
 	byte 0x
 	dupn 5
 
-	// src/arcs/arc55.algo.ts:228
-	// assert(!this._nonce.value)
-	byte 0x5f6e6f6e6365 // "_nonce"
+	// src/arcs/arc55.algo.ts:231
+	// assert(!this.arc55_nonce.value)
+	byte 0x61726335355f6e6f6e6365 // "arc55_nonce"
 	app_global_get
 	!
 	assert
 
-	// src/arcs/arc55.algo.ts:229
-	// this.onlyCreator()
-	callsub onlyCreator
+	// src/arcs/arc55.algo.ts:232
+	// this.onlyAdmin()
+	callsub onlyAdmin
 
-	// src/arcs/arc55.algo.ts:231
+	// src/arcs/arc55.algo.ts:234
 	// t: uint64 = btoi(rawBytes(threshold))
 	frame_dig -1 // threshold: uint8
 	itob
@@ -563,31 +565,31 @@ arc55_setup:
 	btoi
 	frame_bury 0 // t: uint64
 
-	// src/arcs/arc55.algo.ts:232
+	// src/arcs/arc55.algo.ts:235
 	// assert(t)
 	frame_dig 0 // t: uint64
 	assert
 
-	// src/arcs/arc55.algo.ts:233
-	// this._threshold.value = t
-	byte 0x5f7468726573686f6c64 // "_threshold"
+	// src/arcs/arc55.algo.ts:236
+	// this.arc55_threshold.value = t
+	byte 0x61726335355f7468726573686f6c64 // "arc55_threshold"
 	frame_dig 0 // t: uint64
 	app_global_put
 
-	// src/arcs/arc55.algo.ts:235
-	// this._nonce.value = 0
-	byte 0x5f6e6f6e6365 // "_nonce"
+	// src/arcs/arc55.algo.ts:238
+	// this.arc55_nonce.value = 0
+	byte 0x61726335355f6e6f6e6365 // "arc55_nonce"
 	int 0
 	app_global_put
 
-	// src/arcs/arc55.algo.ts:239
+	// src/arcs/arc55.algo.ts:242
 	// pIndex = 0
 	int 0
 	frame_bury 1 // pIndex: uint64
 
 while_0:
-	// src/arcs/arc55.algo.ts:240
-	// this._indexToAddress(pIndex).exists
+	// src/arcs/arc55.algo.ts:243
+	// this.arc55_indexToAddress(pIndex).exists
 	txna Applications 0
 	frame_dig 1 // pIndex: uint64
 	itob
@@ -596,25 +598,25 @@ while_0:
 	pop
 	bz while_0_end
 
-	// src/arcs/arc55.algo.ts:241
-	// address = this._indexToAddress(pIndex).value
+	// src/arcs/arc55.algo.ts:244
+	// address = this.arc55_indexToAddress(pIndex).value
 	frame_dig 1 // pIndex: uint64
 	itob
 	app_global_get
 	frame_bury 2 // address: address
 
-	// src/arcs/arc55.algo.ts:245
-	// this._addressCount(address).delete
+	// src/arcs/arc55.algo.ts:248
+	// this.arc55_addressCount(address).delete
 	frame_dig 2 // address: address
 	app_global_del
 
-	// src/arcs/arc55.algo.ts:246
-	// this._indexToAddress(pIndex).delete
+	// src/arcs/arc55.algo.ts:249
+	// this.arc55_indexToAddress(pIndex).delete
 	frame_dig 1 // pIndex: uint64
 	itob
 	app_global_del
 
-	// src/arcs/arc55.algo.ts:247
+	// src/arcs/arc55.algo.ts:250
 	// pIndex += 1
 	frame_dig 1 // pIndex: uint64
 	int 1
@@ -623,13 +625,13 @@ while_0:
 	b while_0
 
 while_0_end:
-	// src/arcs/arc55.algo.ts:251
+	// src/arcs/arc55.algo.ts:254
 	// nIndex = 0
 	int 0
 	frame_bury 3 // nIndex: uint64
 
 while_1:
-	// src/arcs/arc55.algo.ts:253
+	// src/arcs/arc55.algo.ts:256
 	// nIndex < addresses.length
 	frame_dig 3 // nIndex: uint64
 	frame_dig -2 // addresses: Address[]
@@ -639,7 +641,7 @@ while_1:
 	<
 	bz while_1_end
 
-	// src/arcs/arc55.algo.ts:254
+	// src/arcs/arc55.algo.ts:257
 	// address = addresses[nIndex]
 	frame_dig -2 // addresses: Address[]
 	store 255 // full array
@@ -654,15 +656,15 @@ while_1:
 	extract3
 	frame_bury 4 // address: Address
 
-	// src/arcs/arc55.algo.ts:257
-	// this._indexToAddress(nIndex).value = address
+	// src/arcs/arc55.algo.ts:260
+	// this.arc55_indexToAddress(nIndex).value = address
 	frame_dig 3 // nIndex: uint64
 	itob
 	frame_dig 4 // address: Address
 	app_global_put
 
-	// src/arcs/arc55.algo.ts:261
-	// this._addressCount(address).value += 1
+	// src/arcs/arc55.algo.ts:264
+	// this.arc55_addressCount(address).value += 1
 	frame_dig 4 // address: Address
 	app_global_get
 	int 1
@@ -671,7 +673,7 @@ while_1:
 	swap
 	app_global_put
 
-	// src/arcs/arc55.algo.ts:263
+	// src/arcs/arc55.algo.ts:266
 	// nIndex += 1
 	frame_dig 3 // nIndex: uint64
 	int 1
@@ -706,30 +708,30 @@ arc55_newTransactionGroup:
 	byte 0x
 
 	// if2_condition
-	// src/arcs/arc55.algo.ts:272
-	// !this.isCreator()
-	callsub isCreator
+	// src/arcs/arc55.algo.ts:275
+	// !this.isAdmin()
+	callsub isAdmin
 	!
 	bz if2_end
 
 	// if2_consequent
-	// src/arcs/arc55.algo.ts:273
+	// src/arcs/arc55.algo.ts:276
 	// this.onlySigner()
 	callsub onlySigner
 
 if2_end:
-	// src/arcs/arc55.algo.ts:276
+	// src/arcs/arc55.algo.ts:279
 	// n = this.arc55_nextTransactionGroup()
 	callsub arc55_nextTransactionGroup
 	frame_bury 0 // n: uint64
 
-	// src/arcs/arc55.algo.ts:277
-	// this._nonce.value = n
-	byte 0x5f6e6f6e6365 // "_nonce"
+	// src/arcs/arc55.algo.ts:280
+	// this.arc55_nonce.value = n
+	byte 0x61726335355f6e6f6e6365 // "arc55_nonce"
 	frame_dig 0 // n: uint64
 	app_global_put
 
-	// src/arcs/arc55.algo.ts:279
+	// src/arcs/arc55.algo.ts:282
 	// return n;
 	frame_dig 0 // n: uint64
 
@@ -786,32 +788,32 @@ arc55_addTransaction:
 	dupn 4
 
 	// if3_condition
-	// src/arcs/arc55.algo.ts:295
-	// !this.isCreator()
-	callsub isCreator
+	// src/arcs/arc55.algo.ts:298
+	// !this.isAdmin()
+	callsub isAdmin
 	!
 	bz if3_end
 
 	// if3_consequent
-	// src/arcs/arc55.algo.ts:296
+	// src/arcs/arc55.algo.ts:299
 	// this.onlySigner()
 	callsub onlySigner
 
 if3_end:
-	// src/arcs/arc55.algo.ts:299
+	// src/arcs/arc55.algo.ts:302
 	// assert(transactionGroup)
 	frame_dig -2 // transactionGroup: uint64
 	assert
 
-	// src/arcs/arc55.algo.ts:300
-	// assert(transactionGroup <= this._nonce.value)
+	// src/arcs/arc55.algo.ts:303
+	// assert(transactionGroup <= this.arc55_nonce.value)
 	frame_dig -2 // transactionGroup: uint64
-	byte 0x5f6e6f6e6365 // "_nonce"
+	byte 0x61726335355f6e6f6e6365 // "arc55_nonce"
 	app_global_get
 	<=
 	assert
 
-	// src/arcs/arc55.algo.ts:302
+	// src/arcs/arc55.algo.ts:305
 	// transactionBox: TransactionGroup = {
 	//             nonce: transactionGroup,
 	//             index: index,
@@ -824,12 +826,12 @@ if3_end:
 	concat
 	frame_bury 0 // transactionBox: TransactionGroup
 
-	// src/arcs/arc55.algo.ts:309
+	// src/arcs/arc55.algo.ts:312
 	// transactionData = transaction
 	frame_dig -4 // transaction: bytes
 	frame_bury 1 // transactionData: byte[]
 
-	// src/arcs/arc55.algo.ts:310
+	// src/arcs/arc55.algo.ts:313
 	// groupPosition = this.txn.groupIndex + 1
 	txn GroupIndex
 	int 1
@@ -837,7 +839,7 @@ if3_end:
 	frame_bury 2 // groupPosition: uint64
 
 	// if4_condition
-	// src/arcs/arc55.algo.ts:311
+	// src/arcs/arc55.algo.ts:314
 	// groupPosition < globals.groupSize
 	frame_dig 2 // groupPosition: uint64
 	global GroupSize
@@ -847,7 +849,7 @@ if3_end:
 // if4_consequent
 do_while_0_statement:
 	// if5_condition
-	// src/arcs/arc55.algo.ts:314
+	// src/arcs/arc55.algo.ts:317
 	// this.txnGroup[groupPosition].applicationID === this.txn.applicationID
 	//                     && this.txnGroup[groupPosition].applicationArgs[0] === method("arc55_addTransactionContinued(byte[])void")
 	frame_dig 2 // groupPosition: uint64
@@ -866,7 +868,7 @@ skip_and0:
 	bz if5_end
 
 	// if5_consequent
-	// src/arcs/arc55.algo.ts:317
+	// src/arcs/arc55.algo.ts:320
 	// transactionData += extract3(this.txnGroup[groupPosition].applicationArgs[1], 2, 0)
 	frame_dig 1 // transactionData: byte[]
 	frame_dig 2 // groupPosition: uint64
@@ -876,7 +878,7 @@ skip_and0:
 	frame_bury 1 // transactionData: byte[]
 
 if5_end:
-	// src/arcs/arc55.algo.ts:319
+	// src/arcs/arc55.algo.ts:322
 	// groupPosition += 1
 	frame_dig 2 // groupPosition: uint64
 	int 1
@@ -884,7 +886,7 @@ if5_end:
 	frame_bury 2 // groupPosition: uint64
 
 do_while_0:
-	// src/arcs/arc55.algo.ts:320
+	// src/arcs/arc55.algo.ts:323
 	// groupPosition < globals.groupSize
 	frame_dig 2 // groupPosition: uint64
 	global GroupSize
@@ -894,14 +896,14 @@ do_while_0:
 do_while_0_end:
 
 if4_end:
-	// src/arcs/arc55.algo.ts:323
+	// src/arcs/arc55.algo.ts:326
 	// mbrTxnIncrease = this.arc55_mbrTxnIncrease(transactionData.length)
 	frame_dig 1 // transactionData: byte[]
 	len
 	callsub arc55_mbrTxnIncrease
 	frame_bury 3 // mbrTxnIncrease: uint64
 
-	// src/arcs/arc55.algo.ts:325
+	// src/arcs/arc55.algo.ts:328
 	// verifyPayTxn(costs, {
 	//             receiver: this.app.address,
 	//             amount: { greaterThanEqualTo: mbrTxnIncrease }
@@ -920,8 +922,8 @@ if4_end:
 	>=
 	assert
 
-	// src/arcs/arc55.algo.ts:331
-	// this._transactions(transactionBox).value = transactionData
+	// src/arcs/arc55.algo.ts:334
+	// this.arc55_transactions(transactionBox).value = transactionData
 	frame_dig 0 // transactionBox: TransactionGroup
 	dup
 	box_del
@@ -929,7 +931,7 @@ if4_end:
 	frame_dig 1 // transactionData: byte[]
 	box_put
 
-	// src/arcs/arc55.algo.ts:334
+	// src/arcs/arc55.algo.ts:337
 	// this.TransactionAdded.log({
 	//             transactionGroup: transactionGroup,
 	//             transactionIndex: index
@@ -961,14 +963,14 @@ arc55_addTransactionContinued:
 	proto 1 0
 
 	// if6_condition
-	// src/arcs/arc55.algo.ts:343
-	// !this.isCreator()
-	callsub isCreator
+	// src/arcs/arc55.algo.ts:346
+	// !this.isAdmin()
+	callsub isAdmin
 	!
 	bz if6_end
 
 	// if6_consequent
-	// src/arcs/arc55.algo.ts:344
+	// src/arcs/arc55.algo.ts:347
 	// this.onlySigner()
 	callsub onlySigner
 
@@ -1008,19 +1010,19 @@ arc55_removeTransaction:
 	dupn 3
 
 	// if7_condition
-	// src/arcs/arc55.algo.ts:357
-	// !this.isCreator()
-	callsub isCreator
+	// src/arcs/arc55.algo.ts:360
+	// !this.isAdmin()
+	callsub isAdmin
 	!
 	bz if7_end
 
 	// if7_consequent
-	// src/arcs/arc55.algo.ts:358
+	// src/arcs/arc55.algo.ts:361
 	// this.onlySigner()
 	callsub onlySigner
 
 if7_end:
-	// src/arcs/arc55.algo.ts:361
+	// src/arcs/arc55.algo.ts:364
 	// transactionBox: TransactionGroup = {
 	//             nonce: transactionGroup,
 	//             index: index,
@@ -1033,19 +1035,19 @@ if7_end:
 	concat
 	frame_bury 0 // transactionBox: TransactionGroup
 
-	// src/arcs/arc55.algo.ts:366
-	// txnLength = this._transactions(transactionBox).size
+	// src/arcs/arc55.algo.ts:369
+	// txnLength = this.arc55_transactions(transactionBox).size
 	frame_dig 0 // transactionBox: TransactionGroup
 	box_len
 	assert
 	frame_bury 1 // txnLength: uint64
 
-	// src/arcs/arc55.algo.ts:367
-	// this._transactions(transactionBox).delete
+	// src/arcs/arc55.algo.ts:370
+	// this.arc55_transactions(transactionBox).delete
 	frame_dig 0 // transactionBox: TransactionGroup
 	box_del
 
-	// src/arcs/arc55.algo.ts:372
+	// src/arcs/arc55.algo.ts:375
 	// mbrTxnDecrease = (2500) + (400 * (9 + txnLength))
 	int 2500
 	int 400
@@ -1056,7 +1058,7 @@ if7_end:
 	+
 	frame_bury 2 // mbrTxnDecrease: uint64
 
-	// src/arcs/arc55.algo.ts:374
+	// src/arcs/arc55.algo.ts:377
 	// sendPayment({
 	//             receiver: this.txn.sender,
 	//             amount: mbrTxnDecrease
@@ -1065,12 +1067,12 @@ if7_end:
 	int pay
 	itxn_field TypeEnum
 
-	// src/arcs/arc55.algo.ts:375
+	// src/arcs/arc55.algo.ts:378
 	// receiver: this.txn.sender
 	txn Sender
 	itxn_field Receiver
 
-	// src/arcs/arc55.algo.ts:376
+	// src/arcs/arc55.algo.ts:379
 	// amount: mbrTxnDecrease
 	frame_dig 2 // mbrTxnDecrease: uint64
 	itxn_field Amount
@@ -1082,7 +1084,7 @@ if7_end:
 	// Submit inner transaction
 	itxn_submit
 
-	// src/arcs/arc55.algo.ts:380
+	// src/arcs/arc55.algo.ts:383
 	// this.TransactionRemoved.log({
 	//             transactionGroup: transactionGroup,
 	//             transactionIndex: index
@@ -1136,11 +1138,11 @@ arc55_setSignatures:
 	byte 0x
 	dup
 
-	// src/arcs/arc55.algo.ts:397
+	// src/arcs/arc55.algo.ts:400
 	// this.onlySigner()
 	callsub onlySigner
 
-	// src/arcs/arc55.algo.ts:399
+	// src/arcs/arc55.algo.ts:402
 	// mbrSigIncrease = this.arc55_mbrSigIncrease(signatures.length * 64)
 	frame_dig -3 // signatures: bytes64[]
 	len
@@ -1151,7 +1153,7 @@ arc55_setSignatures:
 	callsub arc55_mbrSigIncrease
 	frame_bury 0 // mbrSigIncrease: uint64
 
-	// src/arcs/arc55.algo.ts:401
+	// src/arcs/arc55.algo.ts:404
 	// verifyPayTxn(costs, {
 	//             receiver: this.app.address,
 	//             amount: { greaterThanEqualTo: mbrSigIncrease }
@@ -1170,7 +1172,7 @@ arc55_setSignatures:
 	>=
 	assert
 
-	// src/arcs/arc55.algo.ts:406
+	// src/arcs/arc55.algo.ts:409
 	// signatureBox: TransactionSignatures = {
 	//             nonce: transactionGroup,
 	//             address: this.txn.sender
@@ -1181,8 +1183,8 @@ arc55_setSignatures:
 	concat
 	frame_bury 1 // signatureBox: TransactionSignatures
 
-	// src/arcs/arc55.algo.ts:411
-	// this._signatures(signatureBox).value = signatures
+	// src/arcs/arc55.algo.ts:414
+	// this.arc55_signatures(signatureBox).value = signatures
 	frame_dig 1 // signatureBox: TransactionSignatures
 	dup
 	box_del
@@ -1198,7 +1200,7 @@ arc55_setSignatures:
 	concat
 	box_put
 
-	// src/arcs/arc55.algo.ts:414
+	// src/arcs/arc55.algo.ts:417
 	// this.SignatureSet.log({
 	//             transactionGroup: transactionGroup,
 	//             signer: this.txn.sender
@@ -1243,11 +1245,11 @@ arc55_clearSignatures:
 	byte 0x
 	dupn 3
 
-	// src/arcs/arc55.algo.ts:429
+	// src/arcs/arc55.algo.ts:432
 	// this.onlySigner()
 	callsub onlySigner
 
-	// src/arcs/arc55.algo.ts:431
+	// src/arcs/arc55.algo.ts:434
 	// signatureBox: TransactionSignatures = {
 	//             nonce: transactionGroup,
 	//             address: address
@@ -1258,19 +1260,19 @@ arc55_clearSignatures:
 	concat
 	frame_bury 0 // signatureBox: TransactionSignatures
 
-	// src/arcs/arc55.algo.ts:436
-	// sigLength = this._signatures(signatureBox).size
+	// src/arcs/arc55.algo.ts:439
+	// sigLength = this.arc55_signatures(signatureBox).size
 	frame_dig 0 // signatureBox: TransactionSignatures
 	box_len
 	assert
 	frame_bury 1 // sigLength: uint64
 
-	// src/arcs/arc55.algo.ts:437
-	// this._signatures(signatureBox).delete
+	// src/arcs/arc55.algo.ts:440
+	// this.arc55_signatures(signatureBox).delete
 	frame_dig 0 // signatureBox: TransactionSignatures
 	box_del
 
-	// src/arcs/arc55.algo.ts:442
+	// src/arcs/arc55.algo.ts:445
 	// mbrSigDecrease = (2500) + (400 * (40 + sigLength))
 	int 2500
 	int 400
@@ -1281,7 +1283,7 @@ arc55_clearSignatures:
 	+
 	frame_bury 2 // mbrSigDecrease: uint64
 
-	// src/arcs/arc55.algo.ts:444
+	// src/arcs/arc55.algo.ts:447
 	// sendPayment({
 	//             receiver: address,
 	//             amount: mbrSigDecrease
@@ -1290,12 +1292,12 @@ arc55_clearSignatures:
 	int pay
 	itxn_field TypeEnum
 
-	// src/arcs/arc55.algo.ts:445
+	// src/arcs/arc55.algo.ts:448
 	// receiver: address
 	frame_dig -2 // address: Address
 	itxn_field Receiver
 
-	// src/arcs/arc55.algo.ts:446
+	// src/arcs/arc55.algo.ts:449
 	// amount: mbrSigDecrease
 	frame_dig 2 // mbrSigDecrease: uint64
 	itxn_field Amount
@@ -1307,7 +1309,7 @@ arc55_clearSignatures:
 	// Submit inner transaction
 	itxn_submit
 
-	// src/arcs/arc55.algo.ts:450
+	// src/arcs/arc55.algo.ts:453
 	// this.SignatureSet.log({
 	//             transactionGroup: transactionGroup,
 	//             signer: address
@@ -1321,12 +1323,20 @@ arc55_clearSignatures:
 	log
 	retsub
 
-// deploy()uint64
+// deploy(address)uint64
 abi_route_deploy:
 	// The ABI return prefix
 	byte 0x151f7c75
 
-	// execute deploy()uint64
+	// admin: address
+	txna ApplicationArgs 1
+	dup
+	len
+	int 32
+	==
+	assert
+
+	// execute deploy(address)uint64
 	callsub deploy
 	itob
 	concat
@@ -1334,14 +1344,39 @@ abi_route_deploy:
 	int 1
 	return
 
-// deploy(): Application
+// deploy(admin: Address): Application
 //
 // Deploy a new On-Chain Msig App.
+// @param admin Address of person responsible for calling `arc55_setup`
 // @returns Msig App Application ID
 deploy:
-	proto 0 1
+	proto 1 1
 
-	// src/msig-app.algo.ts:11
+	// if8_condition
+	// src/msig-app.algo.ts:13
+	// admin != globals.zeroAddress
+	frame_dig -1 // admin: Address
+	global ZeroAddress
+	!=
+	bz if8_else
+
+	// if8_consequent
+	// src/msig-app.algo.ts:14
+	// this.arc55_admin.value = admin
+	byte 0x61726335355f61646d696e // "arc55_admin"
+	frame_dig -1 // admin: Address
+	app_global_put
+	b if8_end
+
+if8_else:
+	// src/msig-app.algo.ts:16
+	// this.arc55_admin.value = this.txn.sender
+	byte 0x61726335355f61646d696e // "arc55_admin"
+	txn Sender
+	app_global_put
+
+if8_end:
+	// src/msig-app.algo.ts:19
 	// return globals.currentApplicationID;
 	global CurrentApplicationID
 	retsub
@@ -1359,9 +1394,9 @@ abi_route_update:
 update:
 	proto 0 0
 
-	// src/msig-app.algo.ts:19
-	// this.onlyCreator()
-	callsub onlyCreator
+	// src/msig-app.algo.ts:27
+	// this.onlyAdmin()
+	callsub onlyAdmin
 	retsub
 
 // destroy()void
@@ -1377,11 +1412,11 @@ abi_route_destroy:
 destroy:
 	proto 0 0
 
-	// src/msig-app.algo.ts:27
-	// this.onlyCreator()
-	callsub onlyCreator
+	// src/msig-app.algo.ts:35
+	// this.onlyAdmin()
+	callsub onlyAdmin
 
-	// src/msig-app.algo.ts:29
+	// src/msig-app.algo.ts:37
 	// sendPayment({
 	//             amount: 0,
 	//             receiver: globals.creatorAddress,
@@ -1392,22 +1427,22 @@ destroy:
 	int pay
 	itxn_field TypeEnum
 
-	// src/msig-app.algo.ts:30
+	// src/msig-app.algo.ts:38
 	// amount: 0
 	int 0
 	itxn_field Amount
 
-	// src/msig-app.algo.ts:31
+	// src/msig-app.algo.ts:39
 	// receiver: globals.creatorAddress
 	global CreatorAddress
 	itxn_field Receiver
 
-	// src/msig-app.algo.ts:32
+	// src/msig-app.algo.ts:40
 	// closeRemainderTo: globals.creatorAddress
 	global CreatorAddress
 	itxn_field CloseRemainderTo
 
-	// src/msig-app.algo.ts:33
+	// src/msig-app.algo.ts:41
 	// fee: 0
 	int 0
 	itxn_field Fee
@@ -1417,16 +1452,16 @@ destroy:
 	retsub
 
 create_NoOp:
-	method "deploy()uint64"
+	method "deploy(address)uint64"
 	txna ApplicationArgs 0
 	match abi_route_deploy
 	err
 
 call_NoOp:
-	method "arc55_threshold()uint64"
+	method "arc55_getThreshold()uint64"
 	method "arc55_nextTransactionGroup()uint64"
-	method "arc55_transaction(uint64,uint8)byte[]"
-	method "arc55_signatures(uint64,address)byte[64][]"
+	method "arc55_getTransaction(uint64,uint8)byte[]"
+	method "arc55_getSignatures(uint64,address)byte[64][]"
 	method "arc55_signerByIndex(uint64)address"
 	method "arc55_isSigner(address)bool"
 	method "arc55_mbrSigIncrease(uint64)uint64"
@@ -1439,7 +1474,7 @@ call_NoOp:
 	method "arc55_setSignatures(pay,uint64,byte[64][])void"
 	method "arc55_clearSignatures(uint64,address)void"
 	txna ApplicationArgs 0
-	match abi_route_arc55_threshold abi_route_arc55_nextTransactionGroup abi_route_arc55_transaction abi_route_arc55_signatures abi_route_arc55_signerByIndex abi_route_arc55_isSigner abi_route_arc55_mbrSigIncrease abi_route_arc55_mbrTxnIncrease abi_route_arc55_setup abi_route_arc55_newTransactionGroup abi_route_arc55_addTransaction abi_route_arc55_addTransactionContinued abi_route_arc55_removeTransaction abi_route_arc55_setSignatures abi_route_arc55_clearSignatures
+	match abi_route_arc55_getThreshold abi_route_arc55_nextTransactionGroup abi_route_arc55_getTransaction abi_route_arc55_getSignatures abi_route_arc55_signerByIndex abi_route_arc55_isSigner abi_route_arc55_mbrSigIncrease abi_route_arc55_mbrTxnIncrease abi_route_arc55_setup abi_route_arc55_newTransactionGroup abi_route_arc55_addTransaction abi_route_arc55_addTransactionContinued abi_route_arc55_removeTransaction abi_route_arc55_setSignatures abi_route_arc55_clearSignatures
 	err
 
 call_UpdateApplication:
