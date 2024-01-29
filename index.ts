@@ -1,4 +1,5 @@
 import algosdk from 'algosdk';
+import { ALGORAND_ZERO_ADDRESS_STRING } from 'algosdk/src/encoding/address';
 import * as algokit from "@algorandfoundation/algokit-utils";
 import { MsigAppClient } from "./client/MsigApp.client";
 
@@ -23,7 +24,9 @@ const appClient = new MsigAppClient({
 }, algod);
 
 // Deploy (outside of ARC55)
-const deployment = await appClient.create.deploy({}, {
+const deployment = await appClient.create.deploy({
+    admin: ALGORAND_ZERO_ADDRESS_STRING
+}, {
     sender: accounts[0]
 });
 
