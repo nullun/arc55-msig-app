@@ -11,9 +11,9 @@ class MsigApp extends Contract.extend(ARC55) {
     deploy(admin: Address): Application {
         // If no-one is set, default to the sender/creator
         if (admin != globals.zeroAddress) {
-            this.arc55_admin.value = admin;
+            this.arc55_setAdmin(admin);
         } else {
-            this.arc55_admin.value = this.txn.sender;
+            this.arc55_setAdmin(this.txn.sender);
         }
 
         return globals.currentApplicationID;

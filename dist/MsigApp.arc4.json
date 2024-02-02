@@ -13,6 +13,16 @@
       }
     },
     {
+      "name": "arc55_getAdmin",
+      "desc": "Retrieves the admin address, responsible for calling arc55_setup",
+      "readonly": true,
+      "args": [],
+      "returns": {
+        "type": "address",
+        "desc": "Admin address"
+      }
+    },
+    {
       "name": "arc55_nextTransactionGroup",
       "readonly": true,
       "args": [],

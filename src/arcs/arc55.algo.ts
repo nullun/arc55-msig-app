@@ -30,8 +30,8 @@ export class ARC55 extends Contract {
     arc55_signatures = BoxMap<TransactionSignatures, bytes64[]>({});
 
     // Signers
-    arc55_indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31, allowPotentialCollisions: true });
-    arc55_addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 30, allowPotentialCollisions: true });
+    arc55_indexToAddress = GlobalStateMap<uint64, Address>({ maxKeys: 31 });
+    arc55_addressCount = GlobalStateMap<Address, uint64>({ maxKeys: 30 });
 
 
     // ============ Events ============
@@ -88,7 +88,11 @@ export class ARC55 extends Contract {
      * Check the transaction sender is the admin
      */
     protected onlyAdmin(): void {
-        assert(this.txn.sender === this.arc55_admin.value);
+        if (this.arc55_admin.exists) {
+            assert(this.txn.sender === this.arc55_admin.value);
+        } else {
+            assert(this.txn.sender === this.app.creator);
+        }
     }
 
     /**
@@ -96,7 +100,11 @@ export class ARC55 extends Contract {
      * @returns True if sender is admin
      */
     protected isAdmin(): boolean {
-        return this.txn.sender === this.arc55_admin.value;
+        if (this.arc55_admin.exists) {
+            return this.txn.sender === this.arc55_admin.value;
+        } else {
+            return this.txn.sender === this.app.creator;
+        }
     }
 
 
@@ -108,6 +116,15 @@ export class ARC55 extends Contract {
     @abi.readonly
     arc55_getThreshold(): uint64 {
         return this.arc55_threshold.value;
+    }
+
+    /**
+     * Retrieves the admin address, responsible for calling arc55_setup
+     * @returns Admin address
+     */
+    @abi.readonly
+    arc55_getAdmin(): Address {
+        return this.arc55_admin.value;
     }
 
     /**
@@ -215,6 +232,16 @@ export class ARC55 extends Contract {
         }
 
         return newMinimumBalance - currentBalance;
+    }
+
+
+    // ============ Internal Functions ============
+    /**
+     * Set the admin address for the On-Chain Msig App
+     * @param newAdmin New admin address
+     */
+    protected arc55_setAdmin(newAdmin: Address): void {
+        this.arc55_admin.value = newAdmin;
     }
 
 
@@ -429,7 +456,9 @@ export class ARC55 extends Contract {
         transactionGroup: uint64,
         address: Address
     ): void {
-        this.onlySigner();
+        if (!this.isAdmin()) {
+            this.onlySigner();
+        }
 
         const signatureBox: TransactionSignatures = {
             nonce: transactionGroup,
