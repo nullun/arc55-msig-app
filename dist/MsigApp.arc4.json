@@ -74,7 +74,7 @@
       }
     },
     {
-      "name": "arc55_signerByIndex",
+      "name": "arc55_getSignerByIndex",
       "desc": "Find out which address is at this index of the multisignature",
       "readonly": true,
       "args": [

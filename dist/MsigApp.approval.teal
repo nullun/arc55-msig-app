@@ -327,8 +327,8 @@ arc55_getSignatures:
 	frame_bury 0
 	retsub
 
-// arc55_signerByIndex(uint64)address
-abi_route_arc55_signerByIndex:
+// arc55_getSignerByIndex(uint64)address
+abi_route_arc55_getSignerByIndex:
 	// The ABI return prefix
 	byte 0x151f7c75
 
@@ -336,19 +336,19 @@ abi_route_arc55_signerByIndex:
 	txna ApplicationArgs 1
 	btoi
 
-	// execute arc55_signerByIndex(uint64)address
-	callsub arc55_signerByIndex
+	// execute arc55_getSignerByIndex(uint64)address
+	callsub arc55_getSignerByIndex
 	concat
 	log
 	int 1
 	return
 
-// arc55_signerByIndex(index: uint64): Address
+// arc55_getSignerByIndex(index: uint64): Address
 //
 // Find out which address is at this index of the multisignature
 // @param index Address at this index of the multisignature
 // @returns Address at index
-arc55_signerByIndex:
+arc55_getSignerByIndex:
 	proto 1 1
 
 	// src/arcs/arc55.algo.ts:178
@@ -1558,7 +1558,7 @@ call_NoOp:
 	method "arc55_nextTransactionGroup()uint64"
 	method "arc55_getTransaction(uint64,uint8)byte[]"
 	method "arc55_getSignatures(uint64,address)byte[64][]"
-	method "arc55_signerByIndex(uint64)address"
+	method "arc55_getSignerByIndex(uint64)address"
 	method "arc55_isSigner(address)bool"
 	method "arc55_mbrSigIncrease(uint64)uint64"
 	method "arc55_mbrTxnIncrease(uint64)uint64"
@@ -1570,7 +1570,7 @@ call_NoOp:
 	method "arc55_setSignatures(pay,uint64,byte[64][])void"
 	method "arc55_clearSignatures(uint64,address)void"
 	txna ApplicationArgs 0
-	match abi_route_arc55_getThreshold abi_route_arc55_getAdmin abi_route_arc55_nextTransactionGroup abi_route_arc55_getTransaction abi_route_arc55_getSignatures abi_route_arc55_signerByIndex abi_route_arc55_isSigner abi_route_arc55_mbrSigIncrease abi_route_arc55_mbrTxnIncrease abi_route_arc55_setup abi_route_arc55_newTransactionGroup abi_route_arc55_addTransaction abi_route_arc55_addTransactionContinued abi_route_arc55_removeTransaction abi_route_arc55_setSignatures abi_route_arc55_clearSignatures
+	match abi_route_arc55_getThreshold abi_route_arc55_getAdmin abi_route_arc55_nextTransactionGroup abi_route_arc55_getTransaction abi_route_arc55_getSignatures abi_route_arc55_getSignerByIndex abi_route_arc55_isSigner abi_route_arc55_mbrSigIncrease abi_route_arc55_mbrTxnIncrease abi_route_arc55_setup abi_route_arc55_newTransactionGroup abi_route_arc55_addTransaction abi_route_arc55_addTransactionContinued abi_route_arc55_removeTransaction abi_route_arc55_setSignatures abi_route_arc55_clearSignatures
 	err
 
 call_UpdateApplication:

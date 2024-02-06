@@ -174,7 +174,7 @@ export class ARC55 extends Contract {
      * @returns Address at index
      */
     @abi.readonly
-    arc55_signerByIndex(index: uint64): Address {
+    arc55_getSignerByIndex(index: uint64): Address {
         return this.arc55_indexToAddress(index).value;
     }
 
